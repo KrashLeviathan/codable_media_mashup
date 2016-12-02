@@ -1,12 +1,14 @@
 grammar comm_grammar;
 
 @lexer::members {
+  boolean debugModeOn = true;
+
   public static void print(String label, String value) {
-     System.out.println(String.format("%1$-14s", label) + ":  " + value);
+      System.out.println(String.format("%1$-14s", label) + ":  " + value);
   }
 
-  public static String removeWS(String str) {
-      return str.replaceAll("[ \t\r\n]+","");
+  public static void sop(String label) {
+      if (debugModeOn) print(label, getText());
   }
 }
 
@@ -26,32 +28,32 @@ fragment URL_CHAR
 
 // ######################################################## PARSER RULES
 
-param  : URL | VNAME | INT ;
+param  : URL | VNAME | INT {sop("param");} ;
 
-expr0  : LPAREN RPAREN ;
-expr1  : LPAREN param RPAREN ;
-expr2  : LPAREN param COMMA param RPAREN ;
-expr3  : LPAREN param COMMA param COMMA param RPAREN ;
+expr3  : LPAREN param COMMA param COMMA param RPAREN {sop("expr3");} ;
+expr2  : LPAREN param COMMA param RPAREN {sop("expr2");} ;
+expr1  : LPAREN param RPAREN {sop("expr1");} ;
+expr0  : LPAREN RPAREN {sop("expr0");} ;
 
-add_all: ADD expr1 SEMICOL ;
-add_rng: ADD expr3 SEMICOL ;
-add    : add_all | add_rng ;
+add_all: ADD expr1 SEMICOL {sop("add_all");} ;
+add_rng: ADD expr3 SEMICOL {sop("add_rng");} ;
+add    : add_all | add_rng {sop("add");} ;
 
-line   : add ;
+line   : add {sop("line");} ;
 
 // ######################################################## LEXER RULES
 
 WS_SKIPPED
        : WS -> skip ;
 
-ADD    : 'add' ;
-VAR    : 'var' ;
+ADD    : 'add' {sop("ADD");} ;
+VAR    : 'var' {sop("VAR");} ;
 
-LPAREN : '(' ;
-RPAREN : ')' ;
-COMMA  : ',' ;
-SEMICOL: ';' ;
+LPAREN : '(' {sop("LPAREN");} ;
+RPAREN : ')' {sop("RPAREN");} ;
+COMMA  : ',' {sop("COMMA");} ;
+SEMICOL: ';' {sop("SEMICOL");} ;
 
-URL    : (ALNUM | URL_CHAR)+ ;
-VNAME  : ALNUM | '_' ;
-INT    : DIGIT+ ;
+URL    : (ALNUM | URL_CHAR)+ {sop("URL");} ;
+VNAME  : ALNUM | '_' {sop("VNAME");} ;
+INT    : DIGIT+ {sop("INT");} ;
