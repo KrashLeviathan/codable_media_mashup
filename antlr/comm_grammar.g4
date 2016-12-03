@@ -30,27 +30,28 @@ fragment DIGIT
 fragment WS
     : [ \t\r\n] ;
 // Any other character needs to be encoded with the percent-encoding (%hh).
-fragment URL_CHAR
-    : [._~:/?#@!$&'()*+,;=`.] | '[' | ']' ;
+//fragment URL_CHAR
+////    : [._~:/?#@!$&'()*+,;=`.] | '[' | ']' ;  // Originally had parenthesis and semicolons
+//    : [._~:/?#@!$&'*+,=`.] | '[' | ']' ;
 
 
 // ######################################################## PARSER RULES
 
 // The start rule; begin parsing here.
-program: stmnt+ ;
+program: comstmt stmnt+ ;
 
-param  : URL | VNAME | INT | STR_LIT;
+param  : VNAME | INT | STR_LIT;
 
 expr3  : LPAREN param COMMA param COMMA param RPAREN ;
 expr2  : LPAREN param COMMA param RPAREN ;
 expr1  : LPAREN param RPAREN ;
-expr0  : LPAREN RPAREN {print("expr0", $LPAREN.text + $RPAREN.text);} ;
+expr0  : LPAREN RPAREN ;
 
 add_all: ADD expr1 SEMICOL ;
 add_rng: ADD expr3 SEMICOL ;
-add    : add_all | add_rng ;
 
-stmnt  : add ;
+comstmt: 'CoMM ' VNAME ';' ;
+stmnt  : add_all | add_rng ;
 
 // ######################################################## LEXER RULES
 
@@ -65,7 +66,6 @@ RPAREN : ')' {sop("RPAREN");} ;
 COMMA  : ',' {sop("COMMA");} ;
 SEMICOL: ';' {sop("SEMICOL");} ;
 
-URL    : (ALNUM | URL_CHAR)+ {sop("URL");} ;
-VNAME  : ALNUM | '_' {sop("VNAME");} ;
-STR_LIT: '"' .*? '"' {sop("STR_LIT");} ;
 INT    : DIGIT+ {sop("INT");} ;
+VNAME  : (ALNUM | '_')+ {sop("VNAME");} ;
+STR_LIT: '"' .*? '"' {sop("STR_LIT");} ;
