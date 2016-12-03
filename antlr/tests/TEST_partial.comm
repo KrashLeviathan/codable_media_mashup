@@ -1,8 +1,5 @@
 CoMM amzAMZ_059;
 
-add("www.youtube.com/12345");
-
-// This is a comment.
-add(One, two, three); // This is also a comment!
-
-//Yep//blah...sdfwenlkasdjf
+var hello=NO;
+var yes = "Hello world!";
+var blah_bleep_0 = 20;

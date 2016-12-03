@@ -40,18 +40,23 @@ fragment WS
 // The start rule; begin parsing here.
 program: comstmt stmnt+ ;
 
-param  : VNAME | INT | STR_LIT;
+param  : vname | int_lit | str_lit ;
+int_lit: INT ;
+vname  : VNAME ;
+str_lit: STR_LIT ;
 
 expr3  : LPAREN param COMMA param COMMA param RPAREN ;
 expr2  : LPAREN param COMMA param RPAREN ;
 expr1  : LPAREN param RPAREN ;
 expr0  : LPAREN RPAREN ;
 
-add_all: ADD expr1 SEMICOL ;
-add_rng: ADD expr3 SEMICOL ;
+add_all: ADD expr1 ;
+add_rng: ADD expr3 ;
+
+assign : VAR VNAME '=' param ;
 
 comstmt: COMM VNAME SEMICOL ;
-stmnt  : add_all | add_rng ;
+stmnt  : (add_all | add_rng | assign) SEMICOL ;
 
 // ######################################################## LEXER RULES
 
