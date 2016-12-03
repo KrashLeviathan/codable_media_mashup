@@ -37,7 +37,8 @@ fragment WS
 // ######################################################## PARSER RULES
 
 // The start rule; begin parsing here.
-program: comstmt stmnt+ ;
+program: comm+ ;
+comm   : comstmt stmnt+ ;
 
 param  : vname | int_lit | str_lit | bool_lt ;
 int_lit: INT ;
@@ -52,8 +53,17 @@ assign : VAR VNAME EQUALS param ;
 
 req_vc : REQ_VC LPAREN ((vname | str_lit) COMMA)* (vname | str_lit) RPAREN ;
 
+// config options
+config : CONFIG (scale | scl_bh | scl_bw | pvt_ups | cache | no_cach) ;
+scale  : SCALE   LPAREN (vname | int_lit) COMMA (vname | int_lit) COMMA (vname | bool_lt) RPAREN ;
+scl_bh : SCL_BH  LPAREN (vname | int_lit) RPAREN ;
+scl_bw : SCL_BW  LPAREN (vname | int_lit) RPAREN ;
+pvt_ups: PVT_UPS LPAREN (vname | bool_lt) RPAREN ;
+cache  : CACHE   LPAREN (vname | str_lit) RPAREN ;
+no_cach: NO_CACH LPAREN RPAREN ;
+
 comstmt: COMM VNAME SEMICOL ;
-stmnt  : (add_all | add_rng | assign | req_vc) SEMICOL ;
+stmnt  : (add_all | add_rng | assign | req_vc | config) SEMICOL ;
 
 // ######################################################## LEXER RULES
 
@@ -65,8 +75,15 @@ COMMENT: '//' .*? [\r\n] {sop("COMMENT");skip();} ;
 COMM   : 'CoMM ' {sop("COMM");} ;
 ADD    : 'add' {sop("ADD");} ;
 VAR    : 'var' {sop("VAR");} ;
-TRUE   : 'true' {sop("TRUE");} ;
 FALSE  : 'false' {sop("FALSE");} ;
+TRUE   : 'true' {sop("TRUE");} ;
+CONFIG : 'config.' {sop("CONFIG");} ;
+SCALE  : 'scale' {sop("SCALE");} ;
+SCL_BH : 'scaleByHeight' {sop("SCL_BH");} ;
+SCL_BW : 'scaleByWidth' {sop("SCL_BW");} ;
+PVT_UPS: 'preventUpscaling' {sop("PVT_UPS");} ;
+CACHE  : 'cache' {sop("CACHE");} ;
+NO_CACH: 'noCache' {sop("NO_CACH");} ;
 REQ_VC : 'requestVideoCredentials' {sop("REQ_VC");} ;
 
 EQUALS : '=' {sop("EQUALS");} ;

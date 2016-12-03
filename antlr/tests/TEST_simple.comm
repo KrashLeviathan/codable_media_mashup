@@ -1,5 +1,7 @@
 CoMM amzAMZ059_;
 
+add(something);
+
 // This is a comment
 CoMM My_Cool_Video_2; // This is also a comment
 
@@ -32,6 +34,6 @@ config.preventUpscaling(true);
 config.preventUpscaling(false);
 config.preventUpscaling(shouldConstrain);
 
-noCache();
-cache(amzAMZ059_);
-cache("amzAMZ059_");
+config.noCache();
+config.cache(amzAMZ059_);
+config.cache("amzAMZ059_");
