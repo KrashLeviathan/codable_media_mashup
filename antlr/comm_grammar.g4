@@ -31,7 +31,6 @@ fragment WS
     : [ \t\r\n] ;
 // Any other character needs to be encoded with the percent-encoding (%hh).
 //fragment URL_CHAR
-////    : [._~:/?#@!$&'()*+,;=`.] | '[' | ']' ;  // Originally had parenthesis and semicolons
 //    : [._~:/?#@!$&'*+,=`.] | '[' | ']' ;
 
 
@@ -40,20 +39,16 @@ fragment WS
 // The start rule; begin parsing here.
 program: comstmt stmnt+ ;
 
-param  : vname | int_lit | str_lit ;
+param  : vname | int_lit | str_lit | bool_lt ;
 int_lit: INT ;
 vname  : VNAME ;
 str_lit: STR_LIT ;
+bool_lt: TRUE | FALSE ;
 
-expr3  : LPAREN param COMMA param COMMA param RPAREN ;
-expr2  : LPAREN param COMMA param RPAREN ;
-expr1  : LPAREN param RPAREN ;
-expr0  : LPAREN RPAREN ;
+add_all: ADD LPAREN (vname | str_lit) RPAREN ;
+add_rng: ADD LPAREN (vname | str_lit) COMMA (vname | str_lit) COMMA (vname | str_lit) RPAREN ;
 
-add_all: ADD expr1 ;
-add_rng: ADD expr3 ;
-
-assign : VAR VNAME '=' param ;
+assign : VAR VNAME EQUALS param ;
 
 comstmt: COMM VNAME SEMICOL ;
 stmnt  : (add_all | add_rng | assign) SEMICOL ;
@@ -68,7 +63,10 @@ COMMENT: '//' .*? [\r\n] {sop("COMMENT");skip();} ;
 COMM   : 'CoMM ' {sop("COMM");} ;
 ADD    : 'add' {sop("ADD");} ;
 VAR    : 'var' {sop("VAR");} ;
+TRUE   : 'true' {sop("TRUE");} ;
+FALSE  : 'false' {sop("FALSE");} ;
 
+EQUALS : '=' {sop("EQUALS");} ;
 LPAREN : '(' {sop("LPAREN");} ;
 RPAREN : ')' {sop("RPAREN");} ;
 COMMA  : ',' {sop("COMMA");} ;

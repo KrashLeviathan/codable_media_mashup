@@ -1,5 +1,8 @@
 CoMM amzAMZ_059;
 
-var hello=NO;
-var yes = "Hello world!";
-var blah_bleep_0 = 20;
+var one = "One";
+
+add("Hello");
+add(Hello);
+add("one", "two", three);
+add(one, two, "three");
