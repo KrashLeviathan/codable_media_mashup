@@ -50,7 +50,7 @@ expr0  : LPAREN RPAREN ;
 add_all: ADD expr1 SEMICOL ;
 add_rng: ADD expr3 SEMICOL ;
 
-comstmt: 'CoMM ' VNAME ';' ;
+comstmt: COMM VNAME SEMICOL ;
 stmnt  : add_all | add_rng ;
 
 // ######################################################## LEXER RULES
@@ -58,6 +58,9 @@ stmnt  : add_all | add_rng ;
 WS_SKIPPED
        : WS -> skip ;
 
+COMMENT: '//' .*? [\r\n] {sop("COMMENT");skip();} ;
+
+COMM   : 'CoMM ' {sop("COMM");} ;
 ADD    : 'add' {sop("ADD");} ;
 VAR    : 'var' {sop("VAR");} ;
 
