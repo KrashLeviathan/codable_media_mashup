@@ -28,12 +28,13 @@ Then run `source ~/.bashrc` or just restart the terminal to apply the changes.
 ## How to use it
 
 ```
-antlr4 <filename.g4>
-javac <filename*.java>
-grun <filename_wo_extension> program [-gui] <input_file>
+antlr4 comm_grammar.g4
+javac comm_grammar*.java Comm.java
+# To view the parse tree:
+grun comm_grammar program -gui tests/TEST_simple.comm
+# To run the bash script generator
+java Comm < comm_file.comm
 ```
-
-By including the `-gui` flag on grun, it displays the GUI parse tree.
 
 ## Cleanup
 
