@@ -50,8 +50,10 @@ add_rng: ADD LPAREN (vname | str_lit) COMMA (vname | str_lit) COMMA (vname | str
 
 assign : VAR VNAME EQUALS param ;
 
+req_vc : REQ_VC LPAREN ((vname | str_lit) COMMA)* (vname | str_lit) RPAREN ;
+
 comstmt: COMM VNAME SEMICOL ;
-stmnt  : (add_all | add_rng | assign) SEMICOL ;
+stmnt  : (add_all | add_rng | assign | req_vc) SEMICOL ;
 
 // ######################################################## LEXER RULES
 
@@ -65,6 +67,7 @@ ADD    : 'add' {sop("ADD");} ;
 VAR    : 'var' {sop("VAR");} ;
 TRUE   : 'true' {sop("TRUE");} ;
 FALSE  : 'false' {sop("FALSE");} ;
+REQ_VC : 'requestVideoCredentials' {sop("REQ_VC");} ;
 
 EQUALS : '=' {sop("EQUALS");} ;
 LPAREN : '(' {sop("LPAREN");} ;

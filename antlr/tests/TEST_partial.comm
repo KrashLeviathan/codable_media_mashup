@@ -1,8 +1,6 @@
 CoMM amzAMZ_059;
 
-var one = "One";
-
-add("Hello");
-add(Hello);
-add("one", "two", three);
-add(one, two, "three");
+requestVideoCredentials(yo);
+requestVideoCredentials(yo, yo, ma);
+requestVideoCredentials("one", two, "3");
+requestVideoCredentials(lksjdfiwenn,iejsdf,"");

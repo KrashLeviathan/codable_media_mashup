@@ -37,10 +37,10 @@ and will be disregarded at runtime.
 CoMM MyCoolVideo;  // This is also a comment, from the slashes to the line's end.
 ```
 
-### `var <varName> = <url | string | int | bool ...>;`
-Defines a variable to be used elsewhere in the program. The `int` and `bool`
-variable types don't require enclosing quotation marks, but the `url` and
-`string` types do. Acceptable variable name characters are `[a-zA-Z0-9_]`.
+### `var <varName> = <varName | string | int | bool ...>;`
+Defines a variable to be used elsewhere in the program. String literals
+require enclosing double quotation marks, but the rest don't. Acceptable
+variable name characters are `[a-zA-Z0-9_]`.
 
 **Example:**
 ```
@@ -50,7 +50,7 @@ var duration    = 12;
 var upscale     = false;
 ```
 
-### `requestVideoCredentials(url video1, url video2, ...);`
+### `requestVideoCredentials(string url1, string url2, ...);`
 This allows the program to download and manipulate private videos that require
 credentials. The user name and password will be requested at runtime so nothing
 gets written in plain text in the code. They are not cached or stored on the
@@ -71,7 +71,7 @@ requestVideoCredentials(yoloFail);
 At runtime, the program will ask for a user name and password for the first video
 set, and then it will ask for a user name and password for the second video set.
 
-### `add(url video, [string startTime, string stopTime]);`
+### `add(string url, [string startTime, string stopTime]);`
 Adds a video or video clip to the stream. If no start/stop times are given, the
 entire video will be added. Start and stop times can be provided to use only a
 certain clip from the video. The start and stop times must be either both present
