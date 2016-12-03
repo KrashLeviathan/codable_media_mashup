@@ -86,12 +86,6 @@ add(graduationVid);
 add(graduationVid, "59:12", "63:07");
 ```
 
-### `addWithCredentials(url video, [string startTime, string stopTime]);`
-Same as the `add()` function, but for private videos that require credentials.
-The user name and password will be requested at runtime so nothing gets
-written in plain text. They are not cached or stored on the server, so if this
-function is added, you will have to input a username and password 
-
 ### `config.<option>;`
 Sets a configuration option for the CoMM video as a whole. Options include
 the following:

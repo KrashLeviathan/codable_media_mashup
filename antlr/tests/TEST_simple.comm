@@ -1,0 +1,37 @@
+CoMM amzAMZ059_;
+
+// This is a comment
+CoMM My_Cool_Video_2; // This is also a comment
+
+var banana_phone = "https://youtu.be/j5C6X9vOEkU";
+var startTime   = "1:05";
+var duration    = 12;
+var upscale     = false;
+
+requestVideoCredentials(funny1, funny2, funny3);
+requestVideoCredentials(yoloFail);
+requestVideoCredentials("https://youtu.be/j5C6X9vOEkU", "https://youtu.be/j5C6X9vOEkU", "https://youtu.be/j5C6X9vOEkU");
+requestVideoCredentials("https://youtu.be/j5C6X9vOEkU");
+
+add(graduationVid);
+    add    (    graduationVid    )    ;
+add("https://youtu.be/j5C6X9vOEkU");
+add(graduationVid, "59:12", "63:07");
+add("https://youtu.be/j5C6X9vOEkU", startTime, stop_time);
+
+  config.scaleByWidth  (  448  )  ;
+config.scaleByWidth(videoWidth);
+config.scaleByHeight(480);
+config.scaleByHeight(VIDEO_HEIGHT);
+
+config.scale(448,336,true);
+config.scale(448, 336, false);
+config.scale(448, 336, shouldScale);
+
+config.preventUpscaling(true);
+config.preventUpscaling(false);
+config.preventUpscaling(shouldConstrain);
+
+noCache();
+cache(amzAMZ059_);
+cache("amzAMZ059_");
