@@ -51,6 +51,7 @@ public class Comm {
         private StringBuffer errorBuffer = new StringBuffer();
         private String filename = "";
         private boolean errorStatus = false;
+        private boolean noCacheSet = false;
 
         // TODO: Make this absolute instead of relative?
         private static final String videoDirectory = "./downloaded_videos";
@@ -71,11 +72,15 @@ public class Comm {
                     + "# Codable Media Mashup (CoMM) bash script\n"
                     + "# Filename: " + filename + "\n"
                     + "# Cache Folder: " + cacheName + "\n"
-                    + "\n#####     Make Directory     #####\nmkdir -p "
-                    + videoDirectory + "/" + cacheName + " 2>/dev/null\n"
-                    + "\n#####     Video Downloads    #####\n" + downloadBuffer.toString()
-                    + "\n#####     Video Slicing      #####\n" + slicingBuffer.toString()
-                    + "\n#####     Video Joining      #####\n" + joiningBuffer.toString();
+                    + "\n##########     File Management    ##########\n"
+                    + ((noCacheSet) ? ("rm -rf " + videoDirectory + "/" + cacheName + "\n") : "")
+                    + "mkdir -p " + videoDirectory + "/" + cacheName + " 2>/dev/null\n"
+                    + "\n##########     Video Downloads    ##########\n"
+                    + downloadBuffer.toString()
+                    + "\n##########     Video Slicing      ##########\n"
+                    + slicingBuffer.toString()
+                    + "\n##########     Video Joining      ##########\n"
+                    + joiningBuffer.toString();
         }
 
         public String getErrors() {
