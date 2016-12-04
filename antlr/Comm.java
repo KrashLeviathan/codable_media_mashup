@@ -71,6 +71,8 @@ public class Comm {
                     + "# Codable Media Mashup (CoMM) bash script\n"
                     + "# Filename: " + filename + "\n"
                     + "# Cache Folder: " + cacheName + "\n"
+                    + "\n#####     Make Directory     #####\nmkdir -p "
+                    + videoDirectory + "/" + cacheName + " 2>/dev/null\n"
                     + "\n#####     Video Downloads    #####\n" + downloadBuffer.toString()
                     + "\n#####     Video Slicing      #####\n" + slicingBuffer.toString()
                     + "\n#####     Video Joining      #####\n" + joiningBuffer.toString();
