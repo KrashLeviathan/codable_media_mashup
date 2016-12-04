@@ -101,12 +101,11 @@ public class Comm {
                 return;
             }
             urlHashCodes.add(hash);
-            String outputFormat = videoDirectory + "/" + cacheName + "/vid"
-                    + hash + ".mkv";
+            String outputFormat = videoDirectory + "/" + cacheName + "/vid" + hash;
             // TODO
             // --username
             // --password
-            downloadBuffer.append("youtube-dl --abort-on-error --no-color "
+            downloadBuffer.append("youtube-dl --abort-on-error --no-color --recode-video mkv "
                     + "--no-playlist --no-overwrites --no-cache-dir --no-progress "
                     + "--output '" + outputFormat + "' '" + url + "'\n");
         }
@@ -151,6 +150,23 @@ public class Comm {
         public void enterComm(comm_grammarParser.CommContext ctx) {
             filename = ctx.comstmt().VNAME().getText();
             cacheName = (ctx.comstmt().cache() != null) ? ctx.comstmt().cache().VNAME().getText() : filename;
+        }
+
+        public void exitComm(comm_grammarParser.CommContext ctx) {
+            String cacheDir = videoDirectory + "/" + cacheName;
+            joiningBuffer.append("cd " + cacheDir + "\n");
+
+            String sliceListFileName = filename + "_slice_list.txt";
+            joiningBuffer.append("touch " + sliceListFileName + "\n");
+
+            String createSliceList = "for f in slice*.mkv; do echo \"file '$f'\" >> '"
+                    + sliceListFileName + "'; done\n";
+            joiningBuffer.append(createSliceList);
+
+            String concatFiles = String.format("ffmpeg -f concat -i '%s' -c copy '%s.mkv'\n", sliceListFileName, filename);
+            joiningBuffer.append(concatFiles);
+
+            joiningBuffer.append("cd -\n");
         }
 
 //        public void exitParam(comm_grammarParser.ParamContext ctx) { }
