@@ -10,22 +10,34 @@ into a video mashup, highlights reel, or compilation, CoMM simplifies things.
 
 ## Language Syntax
 
-### `CoMM <videoName>;`
-Sets the name of the output video and typically defines which cache space the
-program will use when re-using video URLs or variable names. Acceptable name
-characters are `[a-zA-Z0-9_]`. If the `config.cache()` option is used (see
-below), then the video name given here does NOT define the cache space. Multiple
-CoMM's can be defined in the same file: The definitions for each one are located
-underneath it.
+### `CoMM <videoName> [cache(uniqueCacheName)] ;`
+Sets the name of the output video and defines which cache namespace the
+program will use when re-using video URLs or variable names. If the `cache()`
+option is used, then the `uniqueCacheName` provided will define the cache.
+If the `cache()` option is left out, the video name will define the cache.
+The cache option is useful if you want to define multiple CoMM's
+in one file using a shared set of videos. By using the same cache, shared
+videos won't be re-downloaded. Acceptable name and cache namespace
+characters are `[a-zA-Z0-9_]`. 
 
 **Example:**
 ```
-CoMM Game_Highlights_Reel_20160907;
+// The first three videos use the same cache, so shared
+// videos between them will only download once.
+
+CoMM Highlights_Reel_1 cache(monday_night_game_footage);
 ...
 
-CoMM Game_Highlights_Reel_20160914;
+CoMM Highlights_Reel_2 cache(monday_night_game_footage);
 ...
+
+CoMM Highlights_Reel_3 cache(monday_night_game_footage);
+...
+
+CoMM And_Now_For_Something_Completely_Different;
+// Doesn't use the same cache as the other three videos
 ```
+
 
 ### `// Comments`
 Everything after a double forward slash until the end of the line is a comment
@@ -131,26 +143,8 @@ config.preventUpscaling(false); // Since we're not constraining the scale here,
   program is run again after 24 hours, it will need to download the video URLs
   again. By adding `noCache()`, it will slow down same-day re-runs, but if you
   need to pull a newly-updated version of a video, use this option.
-- `cache(uniqueCacheName)` - Lets you define a unique cache name that can be
-  used across multiple videos.
-  
-**Example:**
-```
-// All three of these videos use the same cache space, so videos reused by the
-// second two CoMM's that were used in the first one don't have to re-download.
+  *NOTE: This will disregard any `cache()` option given in the `CoMM` definition.*
 
-CoMM Highlights_Reel_1;
-config.cache("game footage from monday night");
-...
-
-CoMM Highlights_Reel_2;
-config.cache("game footage from monday night");
-...
-
-CoMM Highlights_Reel_3;
-config.cache("game footage from monday night");
-...
-```
 
 ## Examples
 

@@ -3,7 +3,7 @@ CoMM amzAMZ059_;
 add(something);
 
 // This is a comment
-CoMM My_Cool_Video_2; // This is also a comment
+CoMM My_Cool_Video_2 cache(amzAMZ059_); // This is also a comment
 
 var banana_phone = "https://youtu.be/j5C6X9vOEkU";
 var startTime   = "1:05";
@@ -35,5 +35,3 @@ config.preventUpscaling(false);
 config.preventUpscaling(shouldConstrain);
 
 config.noCache();
-config.cache(amzAMZ059_);
-config.cache("amzAMZ059_");

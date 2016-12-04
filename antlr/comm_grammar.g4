@@ -54,15 +54,15 @@ assign : 'var ' VNAME '=' param ;
 req_vc : 'requestVideoCredentials' '(' ((vname | str_lit) ',')* (vname | str_lit) ')' ;
 
 // config options
-config : 'config' '.' (scale | scl_bh | scl_bw | pvt_ups | cache | no_cach) ;
+config : 'config' '.' (scale | scl_bh | scl_bw | pvt_ups | no_cach) ;
 scale  : 'scale' '(' (vname | int_lit) ',' (vname | int_lit) ',' (vname | bool_lt) ')' ;
 scl_bh : 'scaleByHeight' '(' (vname | int_lit) ')' ;
 scl_bw : 'scaleByWidth' '(' (vname | int_lit) ')' ;
 pvt_ups: 'preventUpscaling' '(' (vname | bool_lt) ')' ;
-cache  : 'cache' '(' (vname | str_lit) ')' ;
 no_cach: 'noCache' '(' ')' ;
 
-comstmt: 'CoMM ' VNAME ';' ;
+comstmt: 'CoMM ' VNAME cache? ';' ;
+cache  : ' cache' '(' VNAME ')' ;
 stmnt  : (add_all | add_rng | assign | req_vc | config) ';' ;
 
 // ######################################################## LEXER RULES

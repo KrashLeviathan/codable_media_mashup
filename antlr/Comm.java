@@ -51,13 +51,9 @@ public class Comm {
         private StringBuffer errorBuffer = new StringBuffer();
         private String filename = "";
         private boolean errorStatus = false;
-        private boolean noCacheSet = false;
-
-        // TODO: Make this absolute instead of relative?
+        private boolean cachingDisabled = false;
         private static final String videoDirectory = "./downloaded_videos";
-
-        // FIXME
-        private String cacheName = "fixme";
+        private String cacheName = "default";
 
         private HashMap<String, String> variables = new HashMap<>();
         private ArrayList<Integer> urlHashCodes = new ArrayList<>();
@@ -73,7 +69,7 @@ public class Comm {
                     + "# Filename: " + filename + "\n"
                     + "# Cache Folder: " + cacheName + "\n"
                     + "\n##########     File Management    ##########\n"
-                    + ((noCacheSet) ? ("rm -rf " + videoDirectory + "/" + cacheName + "\n") : "")
+                    + ((cachingDisabled) ? ("rm -rf " + videoDirectory + "/" + cacheName + "\n") : "")
                     + "mkdir -p " + videoDirectory + "/" + cacheName + " 2>/dev/null\n"
                     + "\n##########     Video Downloads    ##########\n"
                     + downloadBuffer.toString()
