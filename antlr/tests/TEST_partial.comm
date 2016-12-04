@@ -1,6 +1,4 @@
-CoMM amzAMZ_059;
+CoMM basic_integration_test;
 
-requestVideoCredentials(yo);
-requestVideoCredentials(yo, yo, ma);
-requestVideoCredentials("one", two, "3");
-requestVideoCredentials(lksjdfiwenn,iejsdf,"");
+add("https://youtu.be/j5C6X9vOEkU");
+add(myVariable);

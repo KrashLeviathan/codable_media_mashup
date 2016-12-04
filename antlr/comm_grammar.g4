@@ -1,7 +1,7 @@
 grammar comm_grammar;
 
 @parser::members {
-  public static boolean debugModeOn = true;
+  public static boolean debugModeOn = false;
 
   public static void print(String label, String value) {
       System.out.println(String.format("%1$-14s", label) + ":  " + value);
@@ -9,7 +9,7 @@ grammar comm_grammar;
 }
 
 @lexer::members {
-  public static boolean debugModeOn = true;
+  public static boolean debugModeOn = false;
 
   public static void print(String label, String value) {
       System.out.println(String.format("%1$-14s", label) + ":  " + value);
