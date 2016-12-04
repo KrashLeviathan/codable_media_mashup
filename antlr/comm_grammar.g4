@@ -47,7 +47,7 @@ str_lit: STR_LIT ;
 bool_lt: 'true' | 'false' ;
 
 add_all: 'add' '(' (vname | str_lit) ')' ;
-add_rng: 'add' '(' (vname | str_lit) ',' (vname | str_lit) ',' (vname | str_lit) ')' ;
+add_rng: 'add' '(' (v1=vname | s1=str_lit) ',' (v2=vname | s2=str_lit) ',' (v3=vname | s3=str_lit) ')' ;
 
 assign : 'var ' VNAME '=' param ;
 

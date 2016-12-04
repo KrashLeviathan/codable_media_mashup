@@ -44,21 +44,36 @@ public class Comm {
     }
 
     public static class comm_grammar_Code_Generator extends comm_grammarBaseListener {
-        private StringBuffer resultBuffer = new StringBuffer();
         private StringBuffer downloadBuffer = new StringBuffer();
+        private StringBuffer slicingBuffer = new StringBuffer();
+        private int sliceIndex = 0;
+        private StringBuffer joiningBuffer = new StringBuffer();
         private StringBuffer errorBuffer = new StringBuffer();
         private String filename = "";
         private boolean errorStatus = false;
 
+        // TODO: Make this absolute instead of relative?
+        private static final String videoDirectory = "./downloaded_videos";
+
+        // FIXME
+        private String cacheName = "fixme";
+
         private HashMap<String, String> variables = new HashMap<>();
-        private ArrayList<String> urls = new ArrayList<>();
+        private ArrayList<Integer> urlHashCodes = new ArrayList<>();
 
         public boolean containsErrors() {
             return errorStatus;
         }
 
         public String getResults() {
-            return downloadBuffer.toString() + resultBuffer.toString();
+            // TODO: Add other metadata here, with credit back to our site / authors
+            return "#!/usr/bin/env bash\n\n"
+                    + "# Codable Media Mashup (CoMM) bash script\n"
+                    + "# Filename: " + filename + "\n"
+                    + "# Cache Folder: " + cacheName + "\n"
+                    + "\n#####     Video Downloads    #####\n" + downloadBuffer.toString()
+                    + "\n#####     Video Slicing      #####\n" + slicingBuffer.toString()
+                    + "\n#####     Video Joining      #####\n" + joiningBuffer.toString();
         }
 
         public String getErrors() {
@@ -69,25 +84,59 @@ public class Comm {
             return filename;
         }
 
+        // Consider the following flags if CoMM is made public:
+        //     --max-filesize
+        //     --limit-rate
+        //     --retries
+        //     --buffer-size
         private void downloadIfNeeded(String url) {
-            if (errorStatus) {
+            if (url == null) {
                 return;
             }
-            if (!urls.contains(url)) {
-                urls.add(url);
-                downloadBuffer.append("youtube-dl \"" + url + "\"\n");
+            int hash = url.hashCode();
+            if (errorStatus || urlHashCodes.contains(hash)) {
+                return;
             }
+            urlHashCodes.add(hash);
+            String outputFormat = videoDirectory + "/" + cacheName + "/vid"
+                    + hash + ".mkv";
+            // TODO
+            // --username
+            // --password
+            downloadBuffer.append("youtube-dl --abort-on-error --no-color "
+                    + "--no-playlist --no-overwrites --no-cache-dir --no-progress "
+                    + "--output '" + outputFormat + "' '" + url + "'\n");
         }
 
         private String stripQuotes(String str) {
-            if (str.charAt(0) == '"' && str.charAt(str.length()-1)=='"') {
+            if (str != null && str.charAt(0) == '"' && str.charAt(str.length()-1)=='"') {
                 return str.substring(1, str.length() - 1);
             } else {
                 return str;
             }
         }
 
-        //        public void enterProgram(comm_grammarParser.ProgramContext ctx) { }
+        private void fetchVariable(String mutatedTarget, String stmtLHS, String vname, String stmtRHS) {
+            if (vname != null) {
+                if (variables.containsKey(vname)) {
+                    mutatedTarget = variables.get(vname);
+                } else {
+                    errorStatus = true;
+                    errorBuffer.append("ERROR: " + stmtLHS + vname + stmtRHS + ";\n");
+                    errorBuffer.append("  The variable '" + vname + "' does not exist!");
+                }
+            }
+        }
+
+        private static int getSecondsFromTime(String time) throws Exception {
+            String[] parts = time.split(":");
+            if (parts.length != 2) {
+                throw new Exception();
+            }
+            return (Integer.parseInt(parts[0]) * 60) + Integer.parseInt(parts[1]);
+        }
+
+        // #######################  OVERWRITTEN METHODS  ###########################
 
         public void exitProgram(comm_grammarParser.ProgramContext ctx) {
             // FIXME: Remove after complete; for reference only
@@ -107,28 +156,69 @@ public class Comm {
 //        public void exitStr_lit(comm_grammarParser.Str_litContext ctx) { }
 //        public void enterBool_lt(comm_grammarParser.Bool_ltContext ctx) { }
 //        public void exitBool_lt(comm_grammarParser.Bool_ltContext ctx) { }
-//        public void enterAdd_all(comm_grammarParser.Add_allContext ctx) { }
         public void exitAdd_all(comm_grammarParser.Add_allContext ctx) {
             String vname = (ctx.vname() != null) ? ctx.vname().getText() : null;
             String str_lit = (ctx.str_lit() != null) ? ctx.str_lit().getText() : null;
 
-            variables.put(vname, "https://youtu.be/j5C6X9vO");
-            if (vname != null) {
-                if (variables.containsKey(vname)) {
-                    str_lit = variables.get(vname);
-                } else {
-                    errorStatus = true;
-                    errorBuffer.append("ERROR: add(" + vname + ");\n");
-                    errorBuffer.append("  The variable '" + vname + "' does not exist!");
-                }
+            fetchVariable(str_lit, "add(", vname, ")");
+            if (str_lit == null) {
+                return;
             }
 
             str_lit = stripQuotes(str_lit);
+
             downloadIfNeeded(str_lit);
-            resultBuffer.append("ffmpeg " + str_lit + "\n");
+
+            String targetFile = String.format("'%s/%s/vid%d.mkv'", videoDirectory, cacheName, str_lit.hashCode());
+            String sliceFile = String.format("'%s/%s/slice%04d.mkv'", videoDirectory, cacheName, sliceIndex++);
+            // When we add an entire video file, there's no need to slice, so we're
+            // just going to add a symlink to the file as a placeholder for this "slice"
+            slicingBuffer.append("ln -s " + targetFile + " " + sliceFile + "\n");
         }
-//        public void enterAdd_rng(comm_grammarParser.Add_rngContext ctx) { }
-//        public void exitAdd_rng(comm_grammarParser.Add_rngContext ctx) { }
+
+        public void exitAdd_rng(comm_grammarParser.Add_rngContext ctx) {
+            String url_v = (ctx.v1 != null) ? ctx.v1.getText() : null;
+            String url_s = (ctx.s1 != null) ? ctx.s1.getText() : null;
+            String start_v = (ctx.v2 != null) ? ctx.v2.getText() : null;
+            String start_s = (ctx.s2 != null) ? ctx.s2.getText() : null;
+            String stop_v = (ctx.v3 != null) ? ctx.v3.getText() : null;
+            String stop_s = (ctx.s3 != null) ? ctx.s3.getText() : null;
+
+            fetchVariable(url_s, "add(", url_v, ", _, _)");
+            fetchVariable(start_s, "add(_, ", start_v, ", _)");
+            fetchVariable(stop_s, "add(_, _, ", stop_v, ")");
+
+            url_s = stripQuotes(url_s);
+            start_s = stripQuotes(start_s);
+            stop_s = stripQuotes(stop_s);
+
+            int startSeconds;
+            try {
+                startSeconds = getSecondsFromTime(start_s);
+            } catch (Exception exception) {
+                // TODO error message
+                startSeconds = 0;
+            }
+            int stopSeconds;
+            try {
+                stopSeconds = getSecondsFromTime(stop_s);
+            } catch (Exception exception) {
+                // TODO error message
+                stopSeconds = 0;
+            }
+            int duration = stopSeconds - startSeconds;
+            if (duration <= 0) {
+                // TODO error message
+            }
+
+            downloadIfNeeded(url_s);
+
+            String targetFile = String.format("'%s/%s/vid%d.mkv'", videoDirectory, cacheName, url_s.hashCode());
+            String sliceFile = String.format("'%s/%s/slice%04d.mkv'", videoDirectory, cacheName, sliceIndex++);
+            // Use ffmpeg to extract the slice from the target file
+            slicingBuffer.append("ffmpeg -i " + targetFile + " -ss " + startSeconds
+                    + " -t " + duration + " " + sliceFile + "\n");
+        }
 //        public void enterAssign(comm_grammarParser.AssignContext ctx) { }
 //        public void exitAssign(comm_grammarParser.AssignContext ctx) { }
 //        public void enterReq_vc(comm_grammarParser.Req_vcContext ctx) { }
