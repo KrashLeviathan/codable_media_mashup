@@ -147,17 +147,14 @@ public class Comm {
 //        String value = ctx.STRING().getText();
         }
 
-//        public void enterComm(comm_grammarParser.CommContext ctx) { }
-//        public void exitComm(comm_grammarParser.CommContext ctx) { }
-//        public void enterParam(comm_grammarParser.ParamContext ctx) { }
+        public void enterComm(comm_grammarParser.CommContext ctx) {
+            filename = ctx.comstmt().VNAME().getText();
+            cacheName = (ctx.comstmt().cache() != null) ? ctx.comstmt().cache().VNAME().getText() : filename;
+        }
 //        public void exitParam(comm_grammarParser.ParamContext ctx) { }
-//        public void enterInt_lit(comm_grammarParser.Int_litContext ctx) { }
 //        public void exitInt_lit(comm_grammarParser.Int_litContext ctx) { }
-//        public void enterVname(comm_grammarParser.VnameContext ctx) { }
 //        public void exitVname(comm_grammarParser.VnameContext ctx) { }
-//        public void enterStr_lit(comm_grammarParser.Str_litContext ctx) { }
 //        public void exitStr_lit(comm_grammarParser.Str_litContext ctx) { }
-//        public void enterBool_lt(comm_grammarParser.Bool_ltContext ctx) { }
 //        public void exitBool_lt(comm_grammarParser.Bool_ltContext ctx) { }
         public void exitAdd_all(comm_grammarParser.Add_allContext ctx) {
             String vname = (ctx.vname() != null) ? ctx.vname().getText() : null;
@@ -222,27 +219,16 @@ public class Comm {
             slicingBuffer.append("ffmpeg -i " + targetFile + " -ss " + startSeconds
                     + " -t " + duration + " " + sliceFile + "\n");
         }
-//        public void enterAssign(comm_grammarParser.AssignContext ctx) { }
 //        public void exitAssign(comm_grammarParser.AssignContext ctx) { }
-//        public void enterReq_vc(comm_grammarParser.Req_vcContext ctx) { }
 //        public void exitReq_vc(comm_grammarParser.Req_vcContext ctx) { }
-//        public void enterConfig(comm_grammarParser.ConfigContext ctx) { }
 //        public void exitConfig(comm_grammarParser.ConfigContext ctx) { }
-//        public void enterScale(comm_grammarParser.ScaleContext ctx) { }
 //        public void exitScale(comm_grammarParser.ScaleContext ctx) { }
-//        public void enterScl_bh(comm_grammarParser.Scl_bhContext ctx) { }
 //        public void exitScl_bh(comm_grammarParser.Scl_bhContext ctx) { }
-//        public void enterScl_bw(comm_grammarParser.Scl_bwContext ctx) { }
 //        public void exitScl_bw(comm_grammarParser.Scl_bwContext ctx) { }
-//        public void enterPvt_ups(comm_grammarParser.Pvt_upsContext ctx) { }
 //        public void exitPvt_ups(comm_grammarParser.Pvt_upsContext ctx) { }
-//        public void enterCache(comm_grammarParser.CacheContext ctx) { }
 //        public void exitCache(comm_grammarParser.CacheContext ctx) { }
-//        public void enterNo_cach(comm_grammarParser.No_cachContext ctx) { }
 //        public void exitNo_cach(comm_grammarParser.No_cachContext ctx) { }
-//        public void enterComstmt(comm_grammarParser.ComstmtContext ctx) { }
 //        public void exitComstmt(comm_grammarParser.ComstmtContext ctx) { }
-//        public void enterStmnt(comm_grammarParser.StmntContext ctx) { }
 //        public void exitStmnt(comm_grammarParser.StmntContext ctx) { }
 
 //        public void enterEveryRule(ParserRuleContext ctx) { }

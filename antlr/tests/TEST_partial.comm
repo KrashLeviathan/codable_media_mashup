@@ -1,4 +1,4 @@
-CoMM basic_integration_test;
+CoMM basic_integration_test cache(shalom);
 
 add("https://youtu.be/j5C6X9vOEkU");
 // add(myVariable);
