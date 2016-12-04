@@ -119,22 +119,23 @@ public class Comm {
             }
         }
 
-        private void fetchVariable(String mutatedTarget, String stmtLHS, String vname, String stmtRHS) {
+        private String fetchVariable(String stmtLHS, String vname, String stmtRHS) throws IllegalArgumentException {
             if (vname != null) {
                 if (variables.containsKey(vname)) {
-                    mutatedTarget = variables.get(vname);
+                    return variables.get(vname);
                 } else {
                     errorStatus = true;
                     errorBuffer.append("ERROR: " + stmtLHS + vname + stmtRHS + ";\n");
                     errorBuffer.append("  The variable '" + vname + "' does not exist!");
                 }
             }
+            throw new IllegalArgumentException("The variable '" + vname + "' does not exist!");
         }
 
-        private static int getSecondsFromTime(String time) throws Exception {
+        private static int getSecondsFromTime(String time) throws IllegalArgumentException {
             String[] parts = time.split(":");
             if (parts.length != 2) {
-                throw new Exception();
+                throw new IllegalArgumentException("Time strings must be in the format 'minutes:seconds'.");
             }
             return (Integer.parseInt(parts[0]) * 60) + Integer.parseInt(parts[1]);
         }
@@ -151,16 +152,19 @@ public class Comm {
             filename = ctx.comstmt().VNAME().getText();
             cacheName = (ctx.comstmt().cache() != null) ? ctx.comstmt().cache().VNAME().getText() : filename;
         }
+
 //        public void exitParam(comm_grammarParser.ParamContext ctx) { }
 //        public void exitInt_lit(comm_grammarParser.Int_litContext ctx) { }
 //        public void exitVname(comm_grammarParser.VnameContext ctx) { }
 //        public void exitStr_lit(comm_grammarParser.Str_litContext ctx) { }
 //        public void exitBool_lt(comm_grammarParser.Bool_ltContext ctx) { }
+
         public void exitAdd_all(comm_grammarParser.Add_allContext ctx) {
             String vname = (ctx.vname() != null) ? ctx.vname().getText() : null;
             String str_lit = (ctx.str_lit() != null) ? ctx.str_lit().getText() : null;
 
-            fetchVariable(str_lit, "add(", vname, ")");
+            try {str_lit = fetchVariable("add(", vname, ")");}
+            catch (IllegalArgumentException e) {}
             if (str_lit == null) {
                 return;
             }
@@ -184,9 +188,12 @@ public class Comm {
             String stop_v = (ctx.v3 != null) ? ctx.v3.getText() : null;
             String stop_s = (ctx.s3 != null) ? ctx.s3.getText() : null;
 
-            fetchVariable(url_s, "add(", url_v, ", _, _)");
-            fetchVariable(start_s, "add(_, ", start_v, ", _)");
-            fetchVariable(stop_s, "add(_, _, ", stop_v, ")");
+            try{url_s = fetchVariable("add(", url_v, ", _, _)");}
+            catch (IllegalArgumentException e) {}
+            try{start_s = fetchVariable("add(_, ", start_v, ", _)");}
+            catch (IllegalArgumentException e) {}
+            try{stop_s = fetchVariable("add(_, _, ", stop_v, ")");}
+            catch (IllegalArgumentException e) {}
 
             url_s = stripQuotes(url_s);
             start_s = stripQuotes(start_s);
@@ -195,14 +202,14 @@ public class Comm {
             int startSeconds;
             try {
                 startSeconds = getSecondsFromTime(start_s);
-            } catch (Exception exception) {
+            } catch (IllegalArgumentException exception) {
                 // TODO error message
                 startSeconds = 0;
             }
             int stopSeconds;
             try {
                 stopSeconds = getSecondsFromTime(stop_s);
-            } catch (Exception exception) {
+            } catch (IllegalArgumentException exception) {
                 // TODO error message
                 stopSeconds = 0;
             }
@@ -219,7 +226,17 @@ public class Comm {
             slicingBuffer.append("ffmpeg -i " + targetFile + " -ss " + startSeconds
                     + " -t " + duration + " " + sliceFile + "\n");
         }
-//        public void exitAssign(comm_grammarParser.AssignContext ctx) { }
+
+        public void exitAssign(comm_grammarParser.AssignContext ctx) {
+            String vname = ctx.VNAME().getText();
+            String value = ctx.param().getText();
+            if (ctx.param().vname() != null) {
+                try{value = fetchVariable("var " + vname + " = ", value, "");}
+                catch (IllegalArgumentException e) {}
+            }
+            variables.put(vname, stripQuotes(value));
+        }
+
 //        public void exitReq_vc(comm_grammarParser.Req_vcContext ctx) { }
 //        public void exitConfig(comm_grammarParser.ConfigContext ctx) { }
 //        public void exitScale(comm_grammarParser.ScaleContext ctx) { }

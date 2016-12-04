@@ -1,5 +1,10 @@
 CoMM basic_integration_test cache(shalom);
 
+var myVariable = "https://youtu.be/j5C6X9vOEkU";
+var second = 25;
+var third = true;
+var fourth = myVariable;
+
 add("https://youtu.be/j5C6X9vOEkU");
-// add(myVariable);
-add("www.youtube.com", "1:20", "1:40");
+add(myVariable, "1:20", "1:40");
+add("www.youtube.com", "59:20", "61:40");
