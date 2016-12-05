@@ -30,7 +30,6 @@ public class Comm {
 
         // Here is where we save to a file or return errors
         if (generator.containsErrors()) {
-            // TODO: Handle errors
             System.out.println(generator.getErrors());
         } else {
             saveToFile(generator.getFilename(), generator.getResults());
@@ -39,8 +38,8 @@ public class Comm {
 
     private static void saveToFile(String filename, String contents) {
         // TODO
-        System.out.println("Saving to " + filename + ".sh ...");
-        System.out.println(contents);
+//        System.out.println("Saving to " + filename + ".sh ...");
+        System.out.println("\n" + contents);
     }
 
     public static class comm_grammar_Code_Generator extends comm_grammarBaseListener {
@@ -58,6 +57,8 @@ public class Comm {
         private HashMap<String, String> variables = new HashMap<>();
         private ArrayList<Integer> urlHashCodes = new ArrayList<>();
 
+        private ArrayList<String> previousFilenames = new ArrayList<>();
+
         public boolean containsErrors() {
             return errorStatus;
         }
@@ -69,8 +70,7 @@ public class Comm {
                     + "# Filename: " + filename + "\n"
                     + "# Cache Folder: " + cacheName + "\n"
                     + "\n##########     File Management    ##########\n"
-                    + ((cachingDisabled) ? ("rm -rf " + videoDirectory + "/" + cacheName + "\n") : "")
-                    + "mkdir -p " + videoDirectory + "/" + cacheName + " 2>/dev/null\n"
+                    + getFileManamentCommands()
                     + "\n##########     Video Downloads    ##########\n"
                     + downloadBuffer.toString()
                     + "\n##########     Video Slicing      ##########\n"
@@ -80,11 +80,22 @@ public class Comm {
         }
 
         public String getErrors() {
-            return errorBuffer.toString();
+            return "\n" + errorBuffer.toString();
         }
 
         public String getFilename() {
             return filename;
+        }
+
+        private String getFileManamentCommands() {
+            if (cachingDisabled) {
+                return "rm -rf " + videoDirectory + "/" + cacheName + "\n"
+                        + "mkdir -p " + videoDirectory + "/" + cacheName + " 2>/dev/null\n";
+            } else {
+                return "rm -f " + videoDirectory + "/" + cacheName + "/slice*.mkv\n"
+                        + "rm -f " + videoDirectory + "/" + cacheName + "/*_slice_list.txt\n"
+                        + "mkdir -p " + videoDirectory + "/" + cacheName + " 2>/dev/null\n";
+            }
         }
 
         // Consider the following flags if CoMM is made public:
@@ -118,39 +129,46 @@ public class Comm {
             }
         }
 
-        private String fetchVariable(String stmtLHS, String vname, String stmtRHS) throws IllegalArgumentException {
+        private String fetchVariable(String vname, String statement) throws IllegalArgumentException {
             if (vname != null) {
                 if (variables.containsKey(vname)) {
                     return variables.get(vname);
                 } else {
                     errorStatus = true;
-                    errorBuffer.append("ERROR: " + stmtLHS + vname + stmtRHS + ";\n");
-                    errorBuffer.append("  The variable '" + vname + "' does not exist!");
+                    errorBuffer.append("ERROR: " + statement + ";\n");
+                    errorBuffer.append("  The variable '" + vname + "' does not exist!\n");
                 }
             }
             throw new IllegalArgumentException("The variable '" + vname + "' does not exist!");
         }
 
-        private static int getSecondsFromTime(String time) throws IllegalArgumentException {
+        private int getSecondsFromTime(String time) throws IllegalArgumentException {
             String[] parts = time.split(":");
             if (parts.length != 2) {
+                errorStatus = true;
                 throw new IllegalArgumentException("Time strings must be in the format 'minutes:seconds'.");
             }
             return (Integer.parseInt(parts[0]) * 60) + Integer.parseInt(parts[1]);
         }
 
+        private void cleanupForNewComm() {
+            sliceIndex = 0;
+            filename = "";
+            cachingDisabled = false;
+            cacheName = "default";
+
+            // Keep variables around for additiona CoMM's?
+//            private HashMap<String, String> variables = new HashMap<>();
+
+            // This will result in the youtube-dl command being run again on all
+            // videos, but since we passed in the '--no-overwrites' flag, it won't
+            // redownload them if they're already in the cache.
+            urlHashCodes = new ArrayList<>();
+        }
+
         // #######################  OVERWRITTEN METHODS  ###########################
 
-        public void exitProgram(comm_grammarParser.ProgramContext ctx) {
-            // FIXME: Remove after complete; for reference only
-//        String id = ctx.ID().getText(); // prop : ID '=' STRING '\n' ;
-//        String value = ctx.STRING().getText();
-        }
-
-        public void enterComm(comm_grammarParser.CommContext ctx) {
-            filename = ctx.comstmt().VNAME().getText();
-            cacheName = (ctx.comstmt().cache() != null) ? ctx.comstmt().cache().VNAME().getText() : filename;
-        }
+//        public void exitProgram(comm_grammarParser.ProgramContext ctx) { }
 
         public void exitComm(comm_grammarParser.CommContext ctx) {
             String cacheDir = videoDirectory + "/" + cacheName;
@@ -167,6 +185,9 @@ public class Comm {
             joiningBuffer.append(concatFiles);
 
             joiningBuffer.append("cd -\n");
+
+            // Get ready for the next one
+            cleanupForNewComm();
         }
 
 //        public void exitParam(comm_grammarParser.ParamContext ctx) { }
@@ -179,9 +200,9 @@ public class Comm {
             String vname = (ctx.vname() != null) ? ctx.vname().getText() : null;
             String str_lit = (ctx.str_lit() != null) ? ctx.str_lit().getText() : null;
 
-            try {str_lit = fetchVariable("add(", vname, ")");}
-            catch (IllegalArgumentException e) {}
-            if (str_lit == null) {
+            try {
+                str_lit = fetchVariable(vname, ctx.getText());
+            } catch (IllegalArgumentException e) {
                 return;
             }
 
@@ -204,34 +225,41 @@ public class Comm {
             String stop_v = (ctx.v3 != null) ? ctx.v3.getText() : null;
             String stop_s = (ctx.s3 != null) ? ctx.s3.getText() : null;
 
-            try{url_s = fetchVariable("add(", url_v, ", _, _)");}
-            catch (IllegalArgumentException e) {}
-            try{start_s = fetchVariable("add(_, ", start_v, ", _)");}
-            catch (IllegalArgumentException e) {}
-            try{stop_s = fetchVariable("add(_, _, ", stop_v, ")");}
-            catch (IllegalArgumentException e) {}
+            try{
+                if (url_v != null) {
+                    url_s = fetchVariable(url_v, ctx.getText());
+                }
+                if (start_v != null) {
+                    start_s = fetchVariable(start_v, ctx.getText());
+                }
+                if (stop_v != null) {
+                    stop_s = fetchVariable(stop_v, ctx.getText());
+                }
+            } catch (IllegalArgumentException e) {
+                return;
+            }
 
             url_s = stripQuotes(url_s);
             start_s = stripQuotes(start_s);
             stop_s = stripQuotes(stop_s);
 
             int startSeconds;
-            try {
-                startSeconds = getSecondsFromTime(start_s);
-            } catch (IllegalArgumentException exception) {
-                // TODO error message
-                startSeconds = 0;
-            }
             int stopSeconds;
             try {
+                startSeconds = getSecondsFromTime(start_s);
                 stopSeconds = getSecondsFromTime(stop_s);
             } catch (IllegalArgumentException exception) {
-                // TODO error message
-                stopSeconds = 0;
+                errorStatus = true;
+                errorBuffer.append("ERROR: " + ctx.getText() + "\n");
+                errorBuffer.append("  " + exception.getMessage() + "\n");
+                return;
             }
             int duration = stopSeconds - startSeconds;
             if (duration <= 0) {
-                // TODO error message
+                errorStatus = true;
+                errorBuffer.append("ERROR: " + ctx.getText() + "\n");
+                errorBuffer.append("  Stop time cannot occur before the start time!\n");
+                return;
             }
 
             downloadIfNeeded(url_s);
@@ -247,8 +275,11 @@ public class Comm {
             String vname = ctx.VNAME().getText();
             String value = ctx.param().getText();
             if (ctx.param().vname() != null) {
-                try{value = fetchVariable("var " + vname + " = ", value, "");}
-                catch (IllegalArgumentException e) {}
+                try{
+                    value = fetchVariable(value, ctx.getText());
+                } catch (IllegalArgumentException e) {
+                    return;
+                }
             }
             variables.put(vname, stripQuotes(value));
         }
@@ -259,15 +290,31 @@ public class Comm {
 //        public void exitScl_bh(comm_grammarParser.Scl_bhContext ctx) { }
 //        public void exitScl_bw(comm_grammarParser.Scl_bwContext ctx) { }
 //        public void exitPvt_ups(comm_grammarParser.Pvt_upsContext ctx) { }
-//        public void exitCache(comm_grammarParser.CacheContext ctx) { }
-//        public void exitNo_cach(comm_grammarParser.No_cachContext ctx) { }
-//        public void exitComstmt(comm_grammarParser.ComstmtContext ctx) { }
-//        public void exitStmnt(comm_grammarParser.StmntContext ctx) { }
+
+        public void exitNo_cach(comm_grammarParser.No_cachContext ctx) {
+            cachingDisabled = true;
+        }
+
+        public void exitComstmt(comm_grammarParser.ComstmtContext ctx) {
+            filename = ctx.VNAME().getText();
+            if (previousFilenames.contains(filename)) {
+                errorStatus = true;
+                // FIXME
+                errorBuffer.append("ERROR: " + ctx.getText() + "\n");
+                errorBuffer.append("  The filename '" + filename
+                        + "' has already been used in this file!");
+            } else {
+                previousFilenames.add(filename);
+            }
+            cacheName = (ctx.cache() != null) ? ctx.cache().VNAME().getText() : filename;
+        }
 
 //        public void enterEveryRule(ParserRuleContext ctx) { }
 //        public void exitEveryRule(ParserRuleContext ctx) { }
 //        public void visitTerminal(TerminalNode node) { }
-//        public void visitErrorNode(ErrorNode node) { }
+        public void visitErrorNode(ErrorNode node) {
+            errorStatus = true;
+        }
     }
 
 }

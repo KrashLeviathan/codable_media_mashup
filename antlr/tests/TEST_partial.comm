@@ -1,9 +1,9 @@
-CoMM banana_phone_clips cache(basic_integration_test);
+CoMM banana_phone_clips cache(test);
 
 var bananaPhone = "https://youtu.be/j5C6X9vOEkU";
 var startTime1 = "1:20";
 var stopTime1  = "1:30";
-var someInt    = 20
+var someInt    = 20;
 var someBool   = true;
 var sameUrl    = bananaPhone;
 

@@ -37,7 +37,7 @@ fragment WS
 // ######################################################## PARSER RULES
 
 // The start rule; begin parsing here.
-program: comm+ ;
+program: comm+ EOF ;
 comm   : comstmt stmnt+ ;
 
 param  : vname | int_lit | str_lit | bool_lt ;
