@@ -9,3 +9,8 @@ var sameUrl    = bananaPhone;
 
 add("https://youtu.be/j5C6X9vOEkU", startTime1, stopTime1);
 add(bananaPhone, "2:00", "2:05");
+
+CoMM duckSong;
+
+add(bananaPhone, "0:05", "0:15");
+add("ducksong.url");

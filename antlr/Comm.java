@@ -36,7 +36,8 @@ public class Comm {
         if (generator.containsErrors()) {
             System.out.println(generator.getErrors());
         } else {
-            saveToFile(generator.getScriptFilename(), generator.getCacheDirectory(), generator.getResults());
+            CommLocation firstLoc = generator.previousLocations.get(0);
+            saveToFile(firstLoc.scriptName(), firstLoc.cacheDir(), generator.getResults());
         }
     }
 
@@ -80,63 +81,41 @@ public class Comm {
     }
 
     private static class CommLocation {
+        private static final String cachesDirectory = "./caches";
+        private static final String scriptPrefix = "RUN_";
         public String filename;
-        public String cacheName;
-        public CommLocation(String filename, String cacheName) {
-            this.filename = filename;
-            this.cacheName = cacheName;
-        }
+        public String cacheName = "default";
+        public String scriptName() { return scriptPrefix + filename + ".sh"; }
+        public String cacheDir() { return cachesDirectory + "/" + cacheName; }
     }
 
     public static class comm_grammar_Code_Generator extends comm_grammarBaseListener {
+        private StringBuffer resultsBuffer = new StringBuffer();
         private StringBuffer downloadBuffer = new StringBuffer();
         private StringBuffer slicingBuffer = new StringBuffer();
         private int sliceIndex = 0;
         private StringBuffer joiningBuffer = new StringBuffer();
         private StringBuffer errorBuffer = new StringBuffer();
-        private String filename = "";
+        private CommLocation location = new CommLocation();
         private boolean errorStatus = false;
         private boolean cachingDisabled = false;
-        private static final String cachesDirectory = "./caches";
-        private static final String scriptPrefix = "RUN_";
-        private String cacheName = "default";
 
         private HashMap<String, String> variables = new HashMap<>();
         private ArrayList<Integer> urlHashCodes = new ArrayList<>();
 
-        private ArrayList<String> previousFilenames = new ArrayList<>();
+        public ArrayList<CommLocation> previousLocations = new ArrayList<>();
 
-        public boolean containsErrors() {
-            return errorStatus;
-        }
 
         public String getResults() {
-            // TODO: Add other metadata here, with credit back to our site / authors
             return "#!/usr/bin/env bash\n\n"
                     + "# Codable Media Mashup (CoMM) bash script\n"
-                    + "# Filename: " + filename + "\n"
-                    + "# Cache Folder: " + cacheName + "\n"
-                    + "\n##########     File Management    ##########\n"
-                    + getFileManamentCommands()
-                    + "\n##########     Video Downloads    ##########\n"
-                    + downloadBuffer.toString()
-                    + "\n##########     Video Slicing      ##########\n"
-                    + slicingBuffer.toString()
-                    + "\n##########     Video Joining      ##########\n"
-                    + joiningBuffer.toString();
+                    + resultsBuffer.toString();
         }
 
-        public String getErrors() {
-            return "\n" + errorBuffer.toString();
-        }
-
-        public String getScriptFilename() {
-            return scriptPrefix + filename + ".sh";
-        }
-
-        public String getCacheDirectory() {
-            return cachesDirectory + "/" + cacheName;
-        }
+        public boolean containsErrors()   { return errorStatus;                   }
+        public String getErrors()         { return "\n" + errorBuffer.toString(); }
+        public String getScriptFilename() { return location.scriptName();         }
+        public String getCacheDirectory() { return location.cacheDir();           }
 
         private String getFileManamentCommands() {
             if (cachingDisabled) {
@@ -203,10 +182,28 @@ public class Comm {
         }
 
         private void cleanupForNewComm() {
+            // Put everything for the current CoMM definition into the resultsBuffer
+            // TODO: Add other metadata here, with credit back to our site / authors
+            resultsBuffer.append("\n\n############################################\n"
+                    + "#   Filename: " + location.filename + "\n"
+                    + "#   Cache Folder: " + location.cacheName + "\n"
+                    + "\n##########     File Management    ##########\n"
+                    + getFileManamentCommands()
+                    + "\n##########     Video Downloads    ##########\n"
+                    + downloadBuffer.toString()
+                    + "\n##########     Video Slicing      ##########\n"
+                    + slicingBuffer.toString()
+                    + "\n##########     Video Joining      ##########\n"
+                    + joiningBuffer.toString());
+
+            // Clean things up for the next run
+            downloadBuffer = new StringBuffer();
+            slicingBuffer  = new StringBuffer();
+            joiningBuffer  = new StringBuffer();
+            previousLocations.add(location);
+            location = new CommLocation();
             sliceIndex = 0;
-            filename = "";
             cachingDisabled = false;
-            cacheName = "default";
 
             // Keep variables around for additiona CoMM's?
 //            private HashMap<String, String> variables = new HashMap<>();
@@ -230,14 +227,14 @@ public class Comm {
 
             joiningBuffer.append("cd " + getCacheDirectory() + "\n");
 
-            String sliceListFileName = filename + "_slice_list.txt";
+            String sliceListFileName = location.filename + "_slice_list.txt";
             joiningBuffer.append("touch " + sliceListFileName + "\n");
 
             String createSliceList = "for f in slice*.mkv; do echo \"file '$f'\" >> '"
                     + sliceListFileName + "'; done\n";
             joiningBuffer.append(createSliceList);
 
-            String concatFiles = String.format("ffmpeg -f concat -i '%s' -c copy '%s.mkv'\n", sliceListFileName, filename);
+            String concatFiles = String.format("ffmpeg -f concat -i '%s' -c copy '%s.mkv'\n", sliceListFileName, location.filename);
             joiningBuffer.append(concatFiles);
 
             joiningBuffer.append("cd -\n");
@@ -356,17 +353,20 @@ public class Comm {
                 errorStatus = true;
                 return;
             }
-            filename = ctx.VNAME().getText();
-            if (previousFilenames.contains(filename)) {
-                errorStatus = true;
-                // FIXME
-                errorBuffer.append("ERROR: " + ctx.getText() + "\n");
-                errorBuffer.append("  The filename '" + filename
-                        + "' has already been used in this file!");
-            } else {
-                previousFilenames.add(filename);
+            location.filename = ctx.VNAME().getText();
+            location.cacheName = (ctx.cache() != null) ? ctx.cache().VNAME().getText() : location.filename;
+            boolean previousFilenameFound = false;
+            for (CommLocation cl : previousLocations) {
+                if (cl.filename.equals(location.filename)) {
+                    previousFilenameFound = true;
+                    errorStatus = true;
+                    // FIXME
+                    errorBuffer.append("ERROR: " + ctx.getText() + "\n");
+                    errorBuffer.append("  The filename '" + location.filename
+                            + "' has already been used in this file!");
+                    return;
+                }
             }
-            cacheName = (ctx.cache() != null) ? ctx.cache().VNAME().getText() : filename;
         }
 
 //        public void enterEveryRule(ParserRuleContext ctx) { }
