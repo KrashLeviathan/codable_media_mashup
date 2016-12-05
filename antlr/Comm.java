@@ -36,7 +36,7 @@ public class Comm {
         if (generator.containsErrors()) {
             System.out.println(generator.getErrors());
         } else {
-            saveToFile(generator.getFilename(), generator.getResults());
+            saveToFile(generator.getScriptFilename(), generator.getCacheDirectory(), generator.getResults());
         }
     }
 
@@ -60,10 +60,32 @@ public class Comm {
         return System.in;
     }
 
-    private static void saveToFile(String filename, String contents) {
-        // TODO
-//        System.out.println("Saving to " + filename + ".sh ...");
-        System.out.println("\n" + contents);
+    private static void saveToFile(String filename, String directory, String contents) {
+        System.out.println("Saving run script to " + directory + "/" + filename + " ...");
+
+        // create multiple directories at one time
+        File dir = new File(directory);
+        boolean successful = dir.mkdirs();
+
+        try {
+            PrintWriter out = new PrintWriter(directory + "/" + filename, "UTF-8");
+            out.print(contents);
+            out.close();
+        } catch (Exception exception) {
+            System.out.println("ERROR SAVING RUN SCRIPT");
+            System.out.println("  " + exception.getMessage());
+            System.out.println("\nPrinting script to terminal...\n");
+            System.out.println(contents);
+        }
+    }
+
+    private static class CommLocation {
+        public String filename;
+        public String cacheName;
+        public CommLocation(String filename, String cacheName) {
+            this.filename = filename;
+            this.cacheName = cacheName;
+        }
     }
 
     public static class comm_grammar_Code_Generator extends comm_grammarBaseListener {
@@ -75,7 +97,8 @@ public class Comm {
         private String filename = "";
         private boolean errorStatus = false;
         private boolean cachingDisabled = false;
-        private static final String videoDirectory = "./downloaded_videos";
+        private static final String cachesDirectory = "./caches";
+        private static final String scriptPrefix = "RUN_";
         private String cacheName = "default";
 
         private HashMap<String, String> variables = new HashMap<>();
@@ -107,18 +130,22 @@ public class Comm {
             return "\n" + errorBuffer.toString();
         }
 
-        public String getFilename() {
-            return filename;
+        public String getScriptFilename() {
+            return scriptPrefix + filename + ".sh";
+        }
+
+        public String getCacheDirectory() {
+            return cachesDirectory + "/" + cacheName;
         }
 
         private String getFileManamentCommands() {
             if (cachingDisabled) {
-                return "rm -rf " + videoDirectory + "/" + cacheName + "\n"
-                        + "mkdir -p " + videoDirectory + "/" + cacheName + " 2>/dev/null\n";
+                return "rm -rf " + getCacheDirectory() + "\n"
+                        + "mkdir -p " + getCacheDirectory() + " 2>/dev/null\n";
             } else {
-                return "rm -f " + videoDirectory + "/" + cacheName + "/slice*.mkv\n"
-                        + "rm -f " + videoDirectory + "/" + cacheName + "/*_slice_list.txt\n"
-                        + "mkdir -p " + videoDirectory + "/" + cacheName + " 2>/dev/null\n";
+                return "rm -f " + getCacheDirectory() + "/slice*.mkv\n"
+                        + "rm -f " + getCacheDirectory() + "/*_slice_list.txt\n"
+                        + "mkdir -p " + getCacheDirectory() + " 2>/dev/null\n";
             }
         }
 
@@ -136,7 +163,7 @@ public class Comm {
                 return;
             }
             urlHashCodes.add(hash);
-            String outputFormat = videoDirectory + "/" + cacheName + "/vid" + hash;
+            String outputFormat = getCacheDirectory() + "/vid" + hash;
             // TODO
             // --username
             // --password
@@ -201,8 +228,7 @@ public class Comm {
                 errorBuffer.append("  This CoMM definition is empty!");
             }
 
-            String cacheDir = videoDirectory + "/" + cacheName;
-            joiningBuffer.append("cd " + cacheDir + "\n");
+            joiningBuffer.append("cd " + getCacheDirectory() + "\n");
 
             String sliceListFileName = filename + "_slice_list.txt";
             joiningBuffer.append("touch " + sliceListFileName + "\n");
@@ -240,8 +266,8 @@ public class Comm {
 
             downloadIfNeeded(str_lit);
 
-            String targetFile = String.format("'%s/%s/vid%d.mkv'", videoDirectory, cacheName, str_lit.hashCode());
-            String sliceFile = String.format("'%s/%s/slice%04d.mkv'", videoDirectory, cacheName, sliceIndex++);
+            String targetFile = String.format("'%s/vid%d.mkv'", getCacheDirectory(), str_lit.hashCode());
+            String sliceFile = String.format("'%s/slice%04d.mkv'", getCacheDirectory(), sliceIndex++);
             // When we add an entire video file, there's no need to slice, so we're
             // just going to add a symlink to the file as a placeholder for this "slice"
             slicingBuffer.append("ln -s " + targetFile + " " + sliceFile + "\n");
@@ -294,8 +320,8 @@ public class Comm {
 
             downloadIfNeeded(url_s);
 
-            String targetFile = String.format("'%s/%s/vid%d.mkv'", videoDirectory, cacheName, url_s.hashCode());
-            String sliceFile = String.format("'%s/%s/slice%04d.mkv'", videoDirectory, cacheName, sliceIndex++);
+            String targetFile = String.format("'%s/vid%d.mkv'", getCacheDirectory(), url_s.hashCode());
+            String sliceFile = String.format("'%s/slice%04d.mkv'", getCacheDirectory(), sliceIndex++);
             // Use ffmpeg to extract the slice from the target file
             slicingBuffer.append("ffmpeg -i " + targetFile + " -ss " + startSeconds
                     + " -t " + duration + " " + sliceFile + "\n");
