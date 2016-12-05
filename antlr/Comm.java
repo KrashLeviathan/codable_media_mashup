@@ -4,11 +4,15 @@ import org.antlr.v4.runtime.tree.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.io.*;
 
 public class Comm {
+    public static final String USAGE = "USAGE:  java Comm <filename.comm>";
+
     public static void main(String[]args) throws Exception {
-        // create a CharStream that reads from standard input
-        ANTLRInputStream input = new ANTLRInputStream(System.in);
+        // create a CharStream that reads from the input
+        InputStream in = getInputStream(args);
+        ANTLRInputStream input = new ANTLRInputStream(in);
 
         // create a lexer that feeds off of input CharStream
         comm_grammarLexer lexer = new comm_grammarLexer(input);
@@ -34,6 +38,26 @@ public class Comm {
         } else {
             saveToFile(generator.getFilename(), generator.getResults());
         }
+    }
+
+    private static InputStream getInputStream(String[] args) {
+        if (args.length == 0) {
+            System.out.println("No filename provided. Using stdin...");
+            return System.in;
+        }
+        if (args.length > 1) {
+            System.err.println("Too many parameters provided!");
+            System.err.println(USAGE);
+            System.exit(1);
+        }
+        try {
+            return new FileInputStream(args[0]);
+        } catch (IOException exception) {
+            System.err.println(exception.getMessage());
+            System.exit(1);
+        }
+        // If all else fails...
+        return System.in;
     }
 
     private static void saveToFile(String filename, String contents) {
@@ -171,6 +195,12 @@ public class Comm {
 //        public void exitProgram(comm_grammarParser.ProgramContext ctx) { }
 
         public void exitComm(comm_grammarParser.CommContext ctx) {
+            if (ctx.stmnt().size() == 0) {
+                errorStatus = true;
+                errorBuffer.append("ERROR: " + ctx.getText() + "\n");
+                errorBuffer.append("  This CoMM definition is empty!");
+            }
+
             String cacheDir = videoDirectory + "/" + cacheName;
             joiningBuffer.append("cd " + cacheDir + "\n");
 
@@ -296,6 +326,10 @@ public class Comm {
         }
 
         public void exitComstmt(comm_grammarParser.ComstmtContext ctx) {
+            if (ctx.VNAME() == null) {
+                errorStatus = true;
+                return;
+            }
             filename = ctx.VNAME().getText();
             if (previousFilenames.contains(filename)) {
                 errorStatus = true;

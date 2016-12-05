@@ -1,11 +1,30 @@
 # Codable Media Mashup
 
-> A language. A website. An online video editor for the power user.
+> A language. A website. A command line tool. An online video editor for the power user.
 
 Codable Media Mashup (CoMM) is both a website and a language used for editing
 online videos through a web server. For those of us who don't have the
 time or bandwidth to download a bunch of online videos and splice them
 into a video mashup, highlights reel, or compilation, CoMM simplifies things.
+
+
+## Using the Command Line Tool
+
+First, you need to build the Comm.jar file. This can be done by running the
+following command from the project's root directory:
+
+```
+tools/build.sh
+```
+
+A file named `Comm.jar` will be created in the root directory. You can then
+run it like so:
+
+```
+java -jar Comm.jar <input_file.comm>
+```
+
+If no input file is provided, it will look for input from stdin.
 
 
 ## Language Syntax

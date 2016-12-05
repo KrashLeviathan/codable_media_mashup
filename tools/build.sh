@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# This script will build the Comm.jar file that is used to process comm programs
+#
+# It should be run from the project's root directory like so:
+#     tools/build.sh
+
+
 if [[ `basename $(pwd)` != "codable_media_mashup" ]]; then
     echo "Please run this tool from the project's root directory."
     exit
@@ -17,9 +23,10 @@ java -Xmx500M -cp "../antlr-4.5.3-complete.jar" org.antlr.v4.Tool comm_grammar.g
 echo -e "${C_YEL}javac Comm.java comm_*.java${C_NRM}"
 javac Comm.java comm_*.java
 
-echo -e "${C_YEL}jar cmvf0 META-IF/MANIFEST.MF ../Comm.jar *${C_NRM}"
-jar cmvf0 META-IF/MANIFEST.MF ../Comm.jar *
+echo -e "${C_YEL}jar cmf0 META-IF/MANIFEST.MF ../Comm.jar *${C_NRM}"
+jar cmf0 META-IF/MANIFEST.MF ../Comm.jar *
 
+# Not really necessary, but might be useful later
 # echo "Cleaning up files..."
 # echo -e "${C_YEL}rm -f *.class *.java *.tokens *~${C_NRM}"
 # rm -f *.class *.java *.tokens *~
