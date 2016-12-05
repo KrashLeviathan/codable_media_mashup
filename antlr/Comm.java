@@ -117,7 +117,7 @@ public class Comm {
             // --username
             // --password
             downloadBuffer.append("youtube-dl --abort-on-error --no-color --recode-video mkv "
-                    + "--no-playlist --no-overwrites --no-cache-dir --no-progress "
+                    + "--no-playlist --no-overwrites --no-post-overwrites --no-cache-dir --no-progress "
                     + "--output '" + outputFormat + "' '" + url + "'\n");
         }
 
