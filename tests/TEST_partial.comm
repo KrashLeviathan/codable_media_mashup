@@ -1,5 +1,6 @@
 CoMM banana_phone_clips cache(test);
 
+// Testing some variable assignments
 var bananaPhone = "https://youtu.be/j5C6X9vOEkU";
 var startTime1 = "1:20";
 var stopTime1  = "1:30";
@@ -10,7 +11,25 @@ var sameUrl    = bananaPhone;
 add("https://youtu.be/j5C6X9vOEkU", startTime1, stopTime1);
 add(bananaPhone, "2:00", "2:05");
 
-CoMM duckSong;
 
-add(bananaPhone, "0:05", "0:15");
-add("ducksong.url");
+//CoMM duckSong;
+
+// Adding the entire "Duck Song"
+//add("https://www.youtube.com/watch?v=MtN1YnoL46Q");
+
+// See? We can still use the variables in this second definition!
+//add(sameUrl, "0:00", "0:05");
+
+
+// This will use the same cache as the first video
+//CoMM dance_moves cache(test);
+
+//
+// White space tests
+//
+//add(
+//"https://www.youtube.com/watch?v=9JDzlhW3XTM",  // King Louie's moves
+//"0:40", "1:28"
+//);
+//add     (      bananaPhone  ,   "1:35",         // Banana's moves
+//"2:17"       )       ;

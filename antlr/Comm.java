@@ -32,13 +32,49 @@ public class Comm {
         comm_grammar_Code_Generator generator = new comm_grammar_Code_Generator();
         walker.walk(generator, tree);
 
-        // Here is where we save to a file or return errors
+        // Here is where we save and run the script or return errors
         if (generator.containsErrors()) {
-            System.out.println(generator.getErrors());
+            System.err.println(generator.getErrors());
+            System.exit(1);
         } else {
             CommLocation firstLoc = generator.previousLocations.get(0);
             saveToFile(firstLoc.scriptName(), firstLoc.cacheDir(), generator.getResults());
+            try {
+                runScript(firstLoc.cacheDir() + "/" + firstLoc.scriptName());
+            } catch (IOException exception) {
+                System.err.println(exception.getMessage());
+                System.exit(1);
+            }
         }
+    }
+
+    private static void runScript(String pathToScript) throws IOException {
+        Runtime rt = Runtime.getRuntime();
+
+        // Run the script
+        String[] commands = {"bash", pathToScript};
+        Process proc = rt.exec(commands);
+
+        BufferedReader stdInput = new BufferedReader(new
+                InputStreamReader(proc.getInputStream()));
+
+        BufferedReader stdError = new BufferedReader(new
+                InputStreamReader(proc.getErrorStream()));
+
+        // read the output from the command
+        String so = null;
+        String se = null;
+        // TODO: Still debugging this part
+        while ((so = stdInput.readLine()) != null || (se = stdError.readLine()) != null) {
+            System.out.print((so == null) ? "" : so + "\n");
+            System.err.print((se == null) ? "" : "  [STDERR] " + se + "\n");
+        }
+
+//        // read any errors from the attempted command
+//        System.out.println("Here is the standard error of the command (if any):\n");
+//        while ((s = stdError.readLine()) != null) {
+//            System.out.println(s);
+//        }
     }
 
     private static InputStream getInputStream(String[] args) {
@@ -73,15 +109,16 @@ public class Comm {
             out.print(contents);
             out.close();
         } catch (Exception exception) {
-            System.out.println("ERROR SAVING RUN SCRIPT");
-            System.out.println("  " + exception.getMessage());
-            System.out.println("\nPrinting script to terminal...\n");
+            System.err.println("ERROR SAVING RUN SCRIPT");
+            System.err.println("  " + exception.getMessage());
+            System.err.println("\nPrinting script to terminal...\n");
             System.out.println(contents);
+            System.exit(1);
         }
     }
 
     private static class CommLocation {
-        private static final String cachesDirectory = "./caches";
+        private static final String cachesDirectory = "./comm_caches";
         private static final String scriptPrefix = "RUN_";
         public String filename;
         public String cacheName = "default";
@@ -108,7 +145,13 @@ public class Comm {
 
         public String getResults() {
             return "#!/usr/bin/env bash\n\n"
-                    + "# Codable Media Mashup (CoMM) bash script\n"
+                    + "# Codable Media Mashup (CoMM) bash script\n\n"
+                    + "C_YEL=\"\\033[01;33m\"\n"
+                    + "C_NRM=\"\\033[00m\"\n\n"
+                    + "# Execute and Log function\n"
+                    + "function echoYel() {\n"
+                    + "    echo -e \"${C_YEL}$1${C_NRM}\"\n"
+                    + "}\n\n"
                     + resultsBuffer.toString();
         }
 
@@ -147,7 +190,7 @@ public class Comm {
             // --username
             // --password
             downloadBuffer.append("youtube-dl --abort-on-error --no-color --recode-video mkv "
-                    + "--no-playlist --no-overwrites --no-post-overwrites --no-cache-dir --no-progress "
+                    + "--no-playlist --no-overwrites --no-post-overwrites --no-cache-dir --newline "
                     + "--output '" + outputFormat + "' '" + url + "'\n");
         }
 
@@ -234,7 +277,7 @@ public class Comm {
                     + sliceListFileName + "'; done\n";
             joiningBuffer.append(createSliceList);
 
-            String concatFiles = String.format("ffmpeg -f concat -i '%s' -c copy '%s.mkv'\n", sliceListFileName, location.filename);
+            String concatFiles = String.format("ffmpeg -f concat -i '%s' -c copy -y '%s.mkv'\n", sliceListFileName, location.filename);
             joiningBuffer.append(concatFiles);
 
             joiningBuffer.append("cd -\n");
@@ -255,9 +298,7 @@ public class Comm {
 
             try {
                 str_lit = fetchVariable(vname, ctx.getText());
-            } catch (IllegalArgumentException e) {
-                return;
-            }
+            } catch (IllegalArgumentException e) { }
 
             str_lit = stripQuotes(str_lit);
 
@@ -266,8 +307,11 @@ public class Comm {
             String targetFile = String.format("'%s/vid%d.mkv'", getCacheDirectory(), str_lit.hashCode());
             String sliceFile = String.format("'%s/slice%04d.mkv'", getCacheDirectory(), sliceIndex++);
             // When we add an entire video file, there's no need to slice, so we're
-            // just going to add a symlink to the file as a placeholder for this "slice"
-            slicingBuffer.append("ln -s " + targetFile + " " + sliceFile + "\n");
+            // just going to add a link to the file as a placeholder for this "slice"
+            // FIXME:
+//            slicingBuffer.append("eal \"ln -P " + targetFile + " " + sliceFile + "\"\n");
+            // Until that works, let's just copy the file
+            slicingBuffer.append("cp " + targetFile + " " + sliceFile + "\n");
         }
 
         public void exitAdd_rng(comm_grammarParser.Add_rngContext ctx) {

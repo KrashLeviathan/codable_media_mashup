@@ -178,4 +178,4 @@ hs_err_pid*
 *.tokens
 antlr/*.java
 !antlr/Comm.java
-caches
+comm_caches
