@@ -1,3 +1,6 @@
+// The language syntax in this file should parse fine with `grun` but won't work
+// correctly with the `java -jar Comm` command.
+
 CoMM amzAMZ059_;
 
 add(something);
@@ -16,7 +19,12 @@ requestVideoCredentials("https://youtu.be/j5C6X9vOEkU", "https://youtu.be/j5C6X9
 requestVideoCredentials("https://youtu.be/j5C6X9vOEkU");
 
 add(graduationVid);
-    add    (    graduationVid    )    ;
+    add    (
+       graduationVid    )
+
+
+
+  ;
 add("https://youtu.be/j5C6X9vOEkU");
 add(graduationVid, "59:12", "63:07");
 add("https://youtu.be/j5C6X9vOEkU", startTime, stop_time);

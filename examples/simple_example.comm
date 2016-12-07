@@ -1,0 +1,40 @@
+CoMM banana_phone_clips cache(BananaPhone);
+
+// This part is just showing the different types of variable assignments
+var bananaPhone = "https://youtu.be/j5C6X9vOEkU";
+var startTime1 = "1:20";
+var stopTime1  = "1:30";
+var someInt    = 20;
+var someBool   = true;
+var sameUrl    = bananaPhone;
+
+// We can add the video with variables or literals
+add("https://youtu.be/j5C6X9vOEkU", startTime1, stopTime1);
+add(bananaPhone, "2:00", "2:05");
+
+
+
+// This will be a second, separate video with a different cache
+CoMM duckSong;
+
+// Adding the entire "Duck Song"
+add("https://www.youtube.com/watch?v=MtN1YnoL46Q");
+
+// We can still use the variables from earlier definitions, but since
+// this video is in a different cache, it will re-download the banana phone
+// video.
+add(sameUrl, "0:00", "0:05");
+
+
+
+// This third video will use the same cache as the first video
+CoMM dance_moves cache(BananaPhone);
+
+// King Louie's moves
+add("https://www.youtube.com/watch?v=9JDzlhW3XTM", "0:40", "1:28");
+
+// Even though the variables `startTime` and `stopTime` were defined earlier
+// in the file, we still have to use the `var` keyword when we assign them
+// again.
+var startTime = "1:35"; var stopTime = "2:17";
+add(bananaPhone, startTime, stopTime);

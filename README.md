@@ -1,24 +1,51 @@
 # Codable Media Mashup
 
-> A language. A website. A command line tool. An online video editor for the power user.
+> A language. A command line tool. A quick and dirty video editor for the power user.
 
-Codable Media Mashup (CoMM) is both a website and a language used for editing
-online videos through a web server. For those of us who don't have the
-time or bandwidth to download a bunch of online videos and splice them
-into a video mashup, highlights reel, or compilation, CoMM simplifies things.
+Codable Media Mashup (CoMM) is both a language and a command line tool used for slicing
+and splicing online videos together. The purpose is to allow people to quickly and
+efficiently make "highlights reel" type of videos using a collection of online videos.
+
+Eventually, through a web server, I would like to make it a server-side tool that gets
+launched when you upload a CoMM file. For now, though, it just gets run on the user's
+own machine through the command line.
+
+
+## Dependencies
+
+CoMM is designed to run on a Unix machine with the following packages installed:
+
+- [Java SDK](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
+- youtube-dl
+- ffmpeg
+- moreutils
+
+**Mac**
+
+On Mac, [homebrew](http://brew.sh/) is a good option for installing these
+dependencies. Once brew in installed, use `brew install <package>` to install.
+
+**Linux**
+
+Use your package manager of choice to install. On most Ubuntu/Debian systems,
+this looks like `sudo apt-get install <package>`.
 
 
 ## Using the Command Line Tool
 
-First, you need to build the Comm.jar file. This can be done by running the
-following command from the project's root directory:
+1) **Clone it**
+
+```
+git clone https://github.com/KrashLeviathan/codable_media_mashup.git
+```
+
+2) **Build it**
 
 ```
 tools/build.sh
 ```
 
-A file named `Comm.jar` will be created in the root directory. You can then
-run it like so:
+3) **Run it**
 
 ```
 java -jar Comm.jar <input_file.comm>
@@ -81,27 +108,6 @@ var duration    = 12;
 var upscale     = false;
 ```
 
-### `requestVideoCredentials(string url1, string url2, ...);`
-This allows the program to download and manipulate private videos that require
-credentials. The user name and password will be requested at runtime so nothing
-gets written in plain text in the code. They are not cached or stored on the
-server, so you will have to input a username and password every time the 
-program is run, once for each `requestVideoCredentials()` function. All the 
-videos listed in a single function will receive the same user name and password.
-
-**Example:** You have three videos, with variable names `funny1`, `funny2`, and
-`funny3`, on your YouTube account that you want to use, but they're private.
-You have another private video from a different website assigned to the variable
-name `yoloFail`. You should make 2 separate calls to this method, like so:
-
-```
-requestVideoCredentials(funny1, funny2, funny3);
-requestVideoCredentials(yoloFail);
-```
-
-At runtime, the program will ask for a user name and password for the first video
-set, and then it will ask for a user name and password for the second video set.
-
 ### `add(string url, [string startTime, string stopTime]);`
 Adds a video or video clip to the stream. If no start/stop times are given, the
 entire video will be added. Start and stop times can be provided to use only a
@@ -121,64 +127,155 @@ add(graduationVid, "59:12", "63:07");
 Sets a configuration option for the CoMM video as a whole. Options include
 the following:
 
-- `scaleByWidth(int width)` - Scales the video to the desired width, keeping the
-  height proportionate to the tallest video added. For example, if we have a
-  320x240 video and a 500x500 video and we call `config.scaleByWidth(448);`,
-  the CoMM's scale will be set to 448x448. The smaller video will have black
-  bars added to the top and bottom, and the larger video will be scaled to 448x448.
-- `scaleByHeight(int height)` - Scales the video to the desired height, keeping
-  the width proportionate to the widest video added.
-- `scale(int width, int height, bool keepProportions)` - Sets the size of the
-  video, with the option to keep or ignore the original proportions. 
-- `preventUpscaling(bool constrainScale)` - Prevents videos from being scaled
-  larger than their original size. If `constrainScale` is set to `true`, the
-  entire CoMM's scale dimensions will be reduced to the largest permissible
-  video scale. Otherwise, it will add a black border around videos that cannot
-  be upscaled.
-
-**Example:**
-```
-// In each of these examples, there are two videos: One is 640x480 and
-// the other is 320x240
-
-CoMM video1;
-config.scale(448, 336, true);   // Sets the scale of the CoMM to 448x336.
-config.preventUpscaling(true);  // Since the smaller of the two videos is 320x240,
-                                // the CoMM scale is reduced to 320x240 because
-                                // we have set `constrainScale` to true.
-...
-
-CoMM video2;
-config.scale(448, 336, true);   // Sets the scale of the CoMM to 448x336.
-config.preventUpscaling(false); // Since we're not constraining the scale here,
-                                // the CoMM scale remains at 448x336 and black
-                                // bars are added around the smaller video
-                                // instead of upscaling it.
-...
-```
-
-- `noCache()` - Tells the program NOT to used cached video from previous runs.
+- `config.noCache()` - Tells the program NOT to used cached video from previous runs.
   Typically the program will cache videos for a given CoMM for 24 hours. If the
   program is run again after 24 hours, it will need to download the video URLs
-  again. By adding `noCache()`, it will slow down same-day re-runs, but if you
+  again. By adding `config.noCache()`, it will slow down same-day re-runs, but if you
   need to pull a newly-updated version of a video, use this option.
   *NOTE: This will disregard any `cache()` option given in the `CoMM` definition.*
 
 
 ## Examples
 
-Here is a basic example of a CoMM file with one CoMM definition using two
-YouTube videos.
+Here is a basic example of a CoMM file with several video definitions:
 
 ```
-TODO
+CoMM banana_phone_clips cache(BananaPhone);
+
+// This part is just showing the different types of variable assignments
+var bananaPhone = "https://youtu.be/j5C6X9vOEkU";
+var startTime1 = "1:20";
+var stopTime1  = "1:30";
+var someInt    = 20;
+var someBool   = true;
+var sameUrl    = bananaPhone;
+
+// We can add the video with variables or literals
+add("https://youtu.be/j5C6X9vOEkU", startTime1, stopTime1);
+add(bananaPhone, "2:00", "2:05");
+
+
+
+// This will be a second, separate video with a different cache
+CoMM duckSong;
+
+// Adding the entire "Duck Song"
+add("https://www.youtube.com/watch?v=MtN1YnoL46Q");
+
+// We can still use the variables from earlier definitions, but since
+// this video is in a different cache, it will re-download the banana phone
+// video.
+add(sameUrl, "0:00", "0:05");
+
+
+
+// This third video will use the same cache as the first video
+CoMM dance_moves cache(BananaPhone);
+
+// King Louie's moves
+add("https://www.youtube.com/watch?v=9JDzlhW3XTM", "0:40", "1:28");
+
+// Even though the variables `startTime` and `stopTime` were defined earlier
+// in the file, we still have to use the `var` keyword when we assign them
+// again.
+var startTime = "1:35"; var stopTime = "2:17";
+add(bananaPhone, startTime, stopTime);
+
 ```
 
-## Restrictions and Limitations
 
-TODO
+## Upcoming Features
 
-## Authors
+The following features are on their way! Just... not here yet. *NOTE: The language
+parser won't recognize these commands as syntax errors, but the functionality hasn't been
+implemented yet.*
 
-- Nathan Karasch
-- Gregory Steenhagen
+- `config.scaleByWidth(int width)` - Scales the video to the desired width, keeping the
+  height proportionate to the tallest video added. For example, if we have a
+  320x240 video and a 500x500 video and we call `config.scaleByWidth(448);`,
+  the CoMM's scale will be set to 448x448. The smaller video will have black
+  bars added to the top and bottom, and the larger video will be scaled to 448x448.
+- `config.scaleByHeight(int height)` - Scales the video to the desired height, keeping
+  the width proportionate to the widest video added.
+- `config.scale(int width, int height, bool keepProportions)` - Sets the size of the
+  video, with the option to keep or ignore the original proportions. 
+- `config.preventUpscaling(bool constrainScale)` - Prevents videos from being scaled
+  larger than their original size. If `constrainScale` is set to `true`, the
+  entire CoMM's scale dimensions will be reduced to the largest permissible
+  video scale. Otherwise, it will add a black border around videos that cannot
+  be upscaled.
+
+  **Example:**
+  ```
+  // In each of these examples, there are two videos: One is 640x480 and
+  // the other is 320x240
+  
+  CoMM video1;
+  config.scale(448, 336, true);   // Sets the scale of the CoMM to 448x336.
+  config.preventUpscaling(true);  // Since the smaller of the two videos is 320x240,
+                                  // the CoMM scale is reduced to 320x240 because
+                                  // we have set `constrainScale` to true.
+  ...
+  
+  CoMM video2;
+  config.scale(448, 336, true);   // Sets the scale of the CoMM to 448x336.
+  config.preventUpscaling(false); // Since we're not constraining the scale here,
+                                  // the CoMM scale remains at 448x336 and black
+                                  // bars are added around the smaller video
+                                  // instead of upscaling it.
+  ...
+  ```
+
+- `requestVideoCredentials(string url1, string url2, ...);` - 
+  This allows the program to download and manipulate private videos that require
+  credentials. The user name and password will be requested at runtime so nothing
+  gets written in plain text in the code. They are not cached or stored on the
+  server, so you will have to input a username and password every time the 
+  program is run, once for each `requestVideoCredentials()` function. All the 
+  videos listed in a single function will receive the same user name and password.
+
+  **Example:** You have three videos, with variable names `funny1`, `funny2`, and
+  `funny3`, on your YouTube account that you want to use, but they're private.
+  You have another private video from a different website assigned to the variable
+  name `yoloFail`. You should make 2 separate calls to this method, like so:
+
+  ```
+  requestVideoCredentials(funny1, funny2, funny3);
+  requestVideoCredentials(yoloFail);
+  ```
+
+  At runtime, the program will ask for a user name and password for the first video
+  set, and then it will ask for a user name and password for the second video set.
+
+
+## Future Development Plans
+
+The original plan was to host this tool on a web server that gets accessed through
+the browser. The exerience would look like so:
+
+1. The user uploads a CoMM file or enters a ComM definition in a textarea.
+2. The file is sent to the server, which runs the command line application.
+3. Once complete, the video file is sent back to the user for download.
+
+The cached files would only stick around for 24 hours before being automagically
+cleaned up by the server. Restrictions would need to be in place to prevent abuse,
+but overall I think it would be pretty doable. I like the idea of letting a really
+fast server do the downloading/processing instead of using my own computer, thus
+freeing up my memory for more important things!
+
+Other potential features include:
+
+- Audio integration (e.g. adding background music to a video compilation)
+- Overlaid text (a quick video meme machine!)
+- Using local video files
+- Finer precision on time start/stop (nanoseconds?)
+- More output format options (probably prioritizing mp4)
+
+## Contributing
+
+If you like using CoMM (or if you don't like it) and want to make it better,
+feel free to contribute! See the
+[CONTRIBUTING](https://github.com/KrashLeviathan/codable_media_mashup/blob/master/CONTRIBUTING.md)
+file for more information.
+
+Feedback can be sent to [nate@krashdev.com](mailto:nate@krashdev.com).

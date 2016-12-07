@@ -7,7 +7,8 @@
 
 
 if [[ `basename $(pwd)` != "codable_media_mashup" ]]; then
-    echo "Please run this tool from the project's root directory."
+    echo "ERROR: Current directory isn't 'codable_media_mashup'."
+    echo "  Please run this tool from the project's root directory."
     exit
 fi
 
@@ -18,10 +19,10 @@ echo -e "${C_YEL}cd antlr${C_NRM}"
 cd antlr
 
 echo -e "${C_YEL}antlr4 comm_grammar.g4$1${C_NRM}"
-java -Xmx500M -cp "../antlr-4.5.3-complete.jar" org.antlr.v4.Tool comm_grammar.g4   # :$CLASSPATH    ???   or absolute?
+java -Xmx500M -cp "../antlr-4.5.3-complete.jar" org.antlr.v4.Tool comm_grammar.g4
 
 echo -e "${C_YEL}javac Comm.java comm_*.java${C_NRM}"
-javac Comm.java comm_*.java
+javac -cp "../antlr-4.5.3-complete.jar" Comm.java comm_*.java
 
 echo -e "${C_YEL}jar cmf0 META-IF/MANIFEST.MF ../Comm.jar *${C_NRM}"
 jar cmf0 META-IF/MANIFEST.MF ../Comm.jar *
@@ -33,3 +34,9 @@ jar cmf0 META-IF/MANIFEST.MF ../Comm.jar *
 
 echo -e "${C_YEL}cd -${C_NRM}"
 cd -
+
+echo
+echo "To run, use the following command:"
+echo
+echo "    java -jar Comm input_file.comm"
+echo
