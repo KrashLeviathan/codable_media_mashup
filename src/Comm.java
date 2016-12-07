@@ -358,7 +358,11 @@ public class Comm {
 
             try {
                 str_lit = fetchVariable(vname, ctx.getText());
-            } catch (IllegalArgumentException e) { }
+            } catch (IllegalArgumentException e) {
+                if (errorStatus) {
+                    return;
+                }
+            }
 
             str_lit = stripQuotes(str_lit);
 
@@ -397,7 +401,9 @@ public class Comm {
                     stop_s = fetchVariable(stop_v, ctx.getText());
                 }
             } catch (IllegalArgumentException e) {
-                return;
+                if (errorStatus) {
+                    return;
+                }
             }
 
             url_s = stripQuotes(url_s);
