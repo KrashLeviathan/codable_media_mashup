@@ -55,6 +55,9 @@ public class Comm {
                 + "    " + pathToScript + ".log");
         ProcessBuilder pb = new ProcessBuilder("bash", pathToScript);
         File log = new File(pathToScript + ".log");
+        // We delete and create it again to make sure we're not appending to an existing log file.
+        log.delete();
+        log = new File(pathToScript + ".log");
         pb.redirectErrorStream(true);
         pb.redirectOutput(ProcessBuilder.Redirect.appendTo(log));
         Process p = pb.start();
@@ -200,8 +203,7 @@ public class Comm {
                         + loggedCommand("mkdir -p " + getCacheDirectory() + " 2>/dev/null", false);
             } else {
                 return loggedCommand("rm -f " + getCacheDirectory() + "/slice*.mkv "
-                        + getCacheDirectory() + "/*_slice_list.txt "
-                        + getCacheDirectory() + "/" + getScriptFilename() + ".log", false)
+                        + getCacheDirectory() + "/*_slice_list.txt ", false)
                         + loggedCommand("mkdir -p " + getCacheDirectory() + " 2>/dev/null", false);
             }
         }
