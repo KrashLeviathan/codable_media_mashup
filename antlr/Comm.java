@@ -27,7 +27,6 @@ public class Comm {
 
         // create a standard ANTLR parse tree and parse tree walker
         ParseTree tree = parser.program(); // begin parsing at program rule
-//        System.out.println(tree.toStringTree(parser)); // print LISP-style tree
         ParseTreeWalker walker = new ParseTreeWalker();
 
         // create our custom listener, then feed to the walker
@@ -120,33 +119,72 @@ public class Comm {
     }
 
     public static class comm_grammar_Code_Generator extends comm_grammarBaseListener {
-        private StringBuffer resultsBuffer = new StringBuffer();
+        // The buffers are populated as the parse tree is walked, and then when it's complete
+        // they're used to generate the bash script
+        private StringBuffer resultsBuffer  = new StringBuffer();
         private StringBuffer downloadBuffer = new StringBuffer();
-        private StringBuffer slicingBuffer = new StringBuffer();
-        private int sliceIndex = 0;
-        private StringBuffer joiningBuffer = new StringBuffer();
-        private StringBuffer errorBuffer = new StringBuffer();
-        private CommLocation location = new CommLocation();
+        private StringBuffer slicingBuffer  = new StringBuffer();
+        private StringBuffer joiningBuffer  = new StringBuffer();
+        private StringBuffer errorBuffer    = new StringBuffer();
+
+        // This gets set to true when text is added to the errorBuffer. The bash script will
+        // not run, and the errors will be shown to the user.
         private boolean errorStatus = false;
+
+        // This gets set when config.noCache() is called.
         private boolean cachingDisabled = false;
 
+        // Keeps track of the slice####.mkv files representing sections of video that will
+        // be joined together to make the final video
+        private int sliceIndex = 0;
+
+        // Stores the value of variables for recall elsewhere in the comm
         private HashMap<String, String> variables = new HashMap<>();
+
+        // Stores the hash codes for urls to be downloaded. Ensures we only download a url
+        // once per cache (unless noCache() is set)
+        // TODO: Convert this to a Set rather than checking for `.contains()` condition.
         private ArrayList<Integer> urlHashCodes = new ArrayList<>();
 
+        // Directory information for the current CoMM
+        private CommLocation location = new CommLocation();
+
+        /**
+         * Keeps track of the directory information for all CoMMs that get defined.
+         */
         public ArrayList<CommLocation> previousLocations = new ArrayList<>();
 
-
+        /**
+         * Returns the contents of the bash script that does all the video magic.
+         * This only gets called after the parse tree walker is finished walkin'.
+         */
         public String getResults() {
             return "#!/usr/bin/env bash\n\n"
                     + "# Codable Media Mashup (CoMM) bash script\n\n"
                     + resultsBuffer.toString();
         }
 
+        /**
+         * @return `true` if errors were found during parsing; otherwise `false`.
+         */
         public boolean containsErrors()   { return errorStatus;                   }
+
+        /**
+         * @return the String of all errors discovered during parsing.
+         */
         public String getErrors()         { return "\n" + errorBuffer.toString(); }
+
+        /**
+         * @return the file name of the bash script that creates the current video.
+         */
         public String getScriptFilename() { return location.scriptName();         }
+
+        /**
+         * @return the relative directory of the cache containing the current video's files.
+         */
         public String getCacheDirectory() { return location.cacheDir();           }
 
+        // Returns the bash commands to echo back the command with a timestamp and then run it.
         private static String loggedCommand(String command, boolean timed) {
             String time = (timed) ? "time " : "";
             String extraEcho = (timed) ? "echo\n" : "";
@@ -154,6 +192,8 @@ public class Comm {
                     + time + command + "\n" + extraEcho;
         }
 
+        // Returns all the file management commands for the current CoMM (cleaning the cache directory
+        // and creating a new cache directory if needed).
         private String getFileManamentCommands() {
             if (cachingDisabled) {
                 return loggedCommand("rm -rf " + getCacheDirectory(), false)
@@ -166,7 +206,8 @@ public class Comm {
             }
         }
 
-        // Consider the following flags if CoMM is made public:
+        // Writes to the downloadBuffer the bash commands for downloading a url.
+        // Consider the following flags if CoMM is made public on a web server:
         //     --max-filesize
         //     --limit-rate
         //     --retries
@@ -181,15 +222,13 @@ public class Comm {
             }
             urlHashCodes.add(hash);
             String outputFormat = getCacheDirectory() + "/vid" + hash;
-            // TODO
-            // --username
-            // --password
             String command = "youtube-dl --abort-on-error --no-color --recode-video mkv "
                     + "--no-playlist --no-overwrites --no-post-overwrites --no-cache-dir --newline "
                     + "--output '" + outputFormat + "' '" + url + "'";
             downloadBuffer.append(loggedCommand(command, true));
         }
 
+        // Strips double quotes from around the given string, if it has them. Otherwise just returns the string.
         private String stripQuotes(String str) {
             if (str != null && str.charAt(0) == '"' && str.charAt(str.length()-1)=='"') {
                 return str.substring(1, str.length() - 1);
@@ -198,6 +237,7 @@ public class Comm {
             }
         }
 
+        // Fetches the given variable value, writing to the errorBuffer if it's not there.
         private String fetchVariable(String vname, String statement) throws IllegalArgumentException {
             if (vname != null) {
                 if (variables.containsKey(vname)) {
@@ -211,6 +251,8 @@ public class Comm {
             throw new IllegalArgumentException("The variable '" + vname + "' does not exist!");
         }
 
+        // Returns the number of seconds implied by the given string.
+        // The string should be formatted as `minutes:seconds`
         private int getSecondsFromTime(String time) throws IllegalArgumentException {
             String[] parts = time.split(":");
             if (parts.length != 2) {
@@ -220,8 +262,9 @@ public class Comm {
             return (Integer.parseInt(parts[0]) * 60) + Integer.parseInt(parts[1]);
         }
 
+        // Writes all the commands generated for the current CoMM definition to the resultsBuffer,
+        // and then resets the instance variables in preparation for another CoMM definition.
         private void cleanupForNewComm() {
-            // Put everything for the current CoMM definition into the resultsBuffer
             // TODO: Add other metadata here, with credit back to our site / authors
             resultsBuffer.append("\n\n############################################\n"
                     + "#   Filename: " + location.filename + "\n"
@@ -250,19 +293,31 @@ public class Comm {
             sliceIndex = 0;
             cachingDisabled = false;
 
-            // Keep variables around for additiona CoMM's?
-//            private HashMap<String, String> variables = new HashMap<>();
-
-            // This will result in the youtube-dl command being run again on all
-            // videos, but since we passed in the '--no-overwrites' flag, it won't
+            // This actually results in the youtube-dl command being run again on all
+            // videos; HOWEVER, since we passed in the '--no-overwrites' flag, it won't
             // redownload them if they're already in the cache.
             urlHashCodes = new ArrayList<>();
         }
 
-        // #######################  OVERWRITTEN METHODS  ###########################
 
-//        public void exitProgram(comm_grammarParser.ProgramContext ctx) { }
 
+
+        // #######################  OVERWRITTEN ANTLR PARSER METHODS  ###########################
+        //
+        // There are exit and enter methods for every parser rule (plus some extras), and they
+        // can all be found in the comm_grammarBaseListener.java file that gets generated after
+        // running antlr4 on the comm_grammar.g4 file. Override these methods to implement the
+        // different CoMM functionality. The `enter` methods are called as the parse tree walker
+        // starts to enter a rule, and the `exit` methods are called when it exits the rule. Only
+        // a fraction of the available methods have actually been overwritten, so you won't see
+        // them all here.
+
+        /**
+         * When a CoMM definition is complete, all the "join" bash commands are added to the
+         * joining buffer, and `cleanupForNewComm()` is called to get things ready for more CoMM
+         * definitions.
+         * @param ctx
+         */
         public void exitComm(comm_grammarParser.CommContext ctx) {
             if (ctx.stmnt().size() == 0) {
                 errorStatus = true;
@@ -281,7 +336,8 @@ public class Comm {
                     + sliceListFileName + "'; done\n";
             joiningBuffer.append(createSliceList);
 
-            String concatFiles = String.format("ffmpeg -f concat -i '%s' -c copy -y '%s.mkv'", sliceListFileName, location.filename);
+            String concatFiles = String.format("ffmpeg -f concat -i '%s' -c copy -y '%s.mkv'",
+                    sliceListFileName, location.filename);
             joiningBuffer.append(loggedCommand(concatFiles, true));
 
             joiningBuffer.append(loggedCommand("cd -", false));
@@ -290,12 +346,10 @@ public class Comm {
             cleanupForNewComm();
         }
 
-//        public void exitParam(comm_grammarParser.ParamContext ctx) { }
-//        public void exitInt_lit(comm_grammarParser.Int_litContext ctx) { }
-//        public void exitVname(comm_grammarParser.VnameContext ctx) { }
-//        public void exitStr_lit(comm_grammarParser.Str_litContext ctx) { }
-//        public void exitBool_lt(comm_grammarParser.Bool_ltContext ctx) { }
-
+        /**
+         * Writes to the slicingBuffer the bash commands for adding an entire video.
+         * @param ctx
+         */
         public void exitAdd_all(comm_grammarParser.Add_allContext ctx) {
             String vname = (ctx.vname() != null) ? ctx.vname().getText() : null;
             String str_lit = (ctx.str_lit() != null) ? ctx.str_lit().getText() : null;
@@ -318,6 +372,10 @@ public class Comm {
             slicingBuffer.append(loggedCommand("cp " + targetFile + " " + sliceFile, false));
         }
 
+        /**
+         * Writes to the slicingBuffer the bash commands for adding part of a video.
+         * @param ctx
+         */
         public void exitAdd_rng(comm_grammarParser.Add_rngContext ctx) {
             String url_v = (ctx.v1 != null) ? ctx.v1.getText() : null;
             String url_s = (ctx.s1 != null) ? ctx.s1.getText() : null;
@@ -372,6 +430,10 @@ public class Comm {
                     + " -t " + duration + " " + sliceFile, true));
         }
 
+        /**
+         * Assigns a value to a variable, which can be used later in the CoMM.
+         * @param ctx
+         */
         public void exitAssign(comm_grammarParser.AssignContext ctx) {
             String vname = ctx.VNAME().getText();
             String value = ctx.param().getText();
@@ -385,17 +447,18 @@ public class Comm {
             variables.put(vname, stripQuotes(value));
         }
 
-//        public void exitReq_vc(comm_grammarParser.Req_vcContext ctx) { }
-//        public void exitConfig(comm_grammarParser.ConfigContext ctx) { }
-//        public void exitScale(comm_grammarParser.ScaleContext ctx) { }
-//        public void exitScl_bh(comm_grammarParser.Scl_bhContext ctx) { }
-//        public void exitScl_bw(comm_grammarParser.Scl_bwContext ctx) { }
-//        public void exitPvt_ups(comm_grammarParser.Pvt_upsContext ctx) { }
-
+        /**
+         * Caching won't be used for this video; it will download all videos in the current CoMM definition.
+         * @param ctx
+         */
         public void exitNo_cach(comm_grammarParser.No_cachContext ctx) {
             cachingDisabled = true;
         }
 
+        /**
+         * Finds the `CoMM <filename> [cache(cachename)];` statement, and sets the filename and cacheName variables.
+         * @param ctx
+         */
         public void exitComstmt(comm_grammarParser.ComstmtContext ctx) {
             if (ctx.VNAME() == null) {
                 errorStatus = true;
@@ -416,12 +479,13 @@ public class Comm {
             }
         }
 
-//        public void enterEveryRule(ParserRuleContext ctx) { }
-//        public void exitEveryRule(ParserRuleContext ctx) { }
-//        public void visitTerminal(TerminalNode node) { }
+        /**
+         * If the Lexer or Parser found any problems, they should set the errorStatus to `true` so the bash
+         * script doesn't get run.
+         * @param node
+         */
         public void visitErrorNode(ErrorNode node) {
             errorStatus = true;
         }
     }
-
 }
