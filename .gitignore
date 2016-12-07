@@ -176,6 +176,6 @@ hs_err_pid*
 
 .idea
 *.tokens
-antlr/*.java
-!antlr/Comm.java
+src/*.java
+!src/Comm.java
 comm_caches

@@ -15,8 +15,8 @@ fi
 C_YEL="\033[01;33m"
 C_NRM="\033[00m"
 
-echo -e "${C_YEL}cd antlr${C_NRM}"
-cd antlr
+echo -e "${C_YEL}cd src${C_NRM}"
+cd src
 
 echo -e "${C_YEL}antlr4 comm_grammar.g4$1${C_NRM}"
 java -Xmx500M -cp "../antlr-4.5.3-complete.jar" org.antlr.v4.Tool comm_grammar.g4

@@ -6,19 +6,27 @@ Codable Media Mashup (CoMM) is both a language and a command line tool used for 
 and splicing online videos together. The purpose is to allow people to quickly and
 efficiently make "highlights reel" type of videos using a collection of online videos.
 
-Eventually, through a web server, I would like to make it a server-side tool that gets
-launched when you upload a CoMM file. For now, though, it just gets run on the user's
+Eventually I would like to make it a server-side tool that gets launched when you
+upload a CoMM file on a website. For now, though, it just gets run on the user's
 own machine through the command line.
+
+Potential use cases:
+
+- Game footage highlights from the season
+- Top ten funniest Seinfeld moments
+- Cat fail compilations
+- Caruso one-liners
+- Compilation of every time Neo says "No", "Why", or "I don't understand". Wake up Neo...
 
 
 ## Dependencies
 
-CoMM is designed to run on a Unix machine with the following packages installed:
+CoMM is designed to run in a bash terminal on a Unix machine with the following packages installed:
 
 - [Java SDK](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
-- youtube-dl
-- ffmpeg
-- moreutils
+- [youtube-dl](https://rg3.github.io/youtube-dl/)
+- [ffmpeg](https://ffmpeg.org/)
+- [moreutils](https://joeyh.name/code/moreutils/)
 
 **Mac**
 
@@ -133,6 +141,7 @@ the following:
   again. By adding `config.noCache()`, it will slow down same-day re-runs, but if you
   need to pull a newly-updated version of a video, use this option.
   *NOTE: This will disregard any `cache()` option given in the `CoMM` definition.*
+- More to come! (see below)
 
 
 ## Examples
