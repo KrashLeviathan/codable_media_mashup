@@ -8,6 +8,8 @@ import java.io.*;
 
 public class Comm {
     public static final String USAGE = "USAGE:  java Comm <filename.comm>";
+    public static final String C_YEL = "\033[01;33m";
+    public static final String C_NRM = "\033[00m";
 
     public static void main(String[]args) throws Exception {
         // create a CharStream that reads from the input
@@ -49,32 +51,24 @@ public class Comm {
     }
 
     private static void runScript(String pathToScript) throws IOException {
-        Runtime rt = Runtime.getRuntime();
-
-        // Run the script
-        String[] commands = {"bash", pathToScript};
-        Process proc = rt.exec(commands);
-
-        BufferedReader stdInput = new BufferedReader(new
-                InputStreamReader(proc.getInputStream()));
-
-        BufferedReader stdError = new BufferedReader(new
-                InputStreamReader(proc.getErrorStream()));
-
-        // read the output from the command
-        String so = null;
-        String se = null;
-        // TODO: Still debugging this part
-        while ((so = stdInput.readLine()) != null || (se = stdError.readLine()) != null) {
-            System.out.print((so == null) ? "" : so + "\n");
-            System.err.print((se == null) ? "" : "  [STDERR] " + se + "\n");
+        System.out.println("Running the script... Please be patient!\n"
+                + "If necessary, you can 'cat' the log to the terminal to see \n"
+                + "what's happening. The logs are located at:\n"
+                + "    " + pathToScript + ".log");
+        ProcessBuilder pb = new ProcessBuilder("bash", pathToScript);
+        File log = new File(pathToScript + ".log");
+        pb.redirectErrorStream(true);
+        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(log));
+        Process p = pb.start();
+        try {
+            int exitCode = p.waitFor();
+            if (exitCode != 0) {
+                System.err.println("Completed, but with errors. See log for details.");
+            }
+        } catch (InterruptedException exception) {
+            System.err.println(exception.getMessage());
+            System.exit(1);
         }
-
-//        // read any errors from the attempted command
-//        System.out.println("Here is the standard error of the command (if any):\n");
-//        while ((s = stdError.readLine()) != null) {
-//            System.out.println(s);
-//        }
     }
 
     private static InputStream getInputStream(String[] args) {
@@ -98,7 +92,7 @@ public class Comm {
     }
 
     private static void saveToFile(String filename, String directory, String contents) {
-        System.out.println("Saving run script to " + directory + "/" + filename + " ...");
+        System.out.println("Saving run script to " + directory + "/" + filename);
 
         // create multiple directories at one time
         File dir = new File(directory);
@@ -122,7 +116,7 @@ public class Comm {
         private static final String scriptPrefix = "RUN_";
         public String filename;
         public String cacheName = "default";
-        public String scriptName() { return scriptPrefix + filename + ".sh"; }
+        public String scriptName() { return scriptPrefix + filename + ".bash"; }
         public String cacheDir() { return cachesDirectory + "/" + cacheName; }
     }
 
@@ -146,12 +140,6 @@ public class Comm {
         public String getResults() {
             return "#!/usr/bin/env bash\n\n"
                     + "# Codable Media Mashup (CoMM) bash script\n\n"
-                    + "C_YEL=\"\\033[01;33m\"\n"
-                    + "C_NRM=\"\\033[00m\"\n\n"
-                    + "# Execute and Log function\n"
-                    + "function echoYel() {\n"
-                    + "    echo -e \"${C_YEL}$1${C_NRM}\"\n"
-                    + "}\n\n"
                     + resultsBuffer.toString();
         }
 
@@ -160,14 +148,21 @@ public class Comm {
         public String getScriptFilename() { return location.scriptName();         }
         public String getCacheDirectory() { return location.cacheDir();           }
 
+        private static String loggedCommand(String command, boolean timed) {
+            String time = (timed) ? "time " : "";
+            String extraEcho = (timed) ? "echo\n" : "";
+            return "echo\necho \"" + command + "\" | ts '[%Y-%m-%d %H:%M:%.S]'\necho\n"
+                    + time + command + "\n" + extraEcho;
+        }
+
         private String getFileManamentCommands() {
             if (cachingDisabled) {
-                return "rm -rf " + getCacheDirectory() + "\n"
-                        + "mkdir -p " + getCacheDirectory() + " 2>/dev/null\n";
+                return loggedCommand("rm -rf " + getCacheDirectory(), false)
+                        + loggedCommand("mkdir -p " + getCacheDirectory() + " 2>/dev/null", false);
             } else {
-                return "rm -f " + getCacheDirectory() + "/slice*.mkv\n"
-                        + "rm -f " + getCacheDirectory() + "/*_slice_list.txt\n"
-                        + "mkdir -p " + getCacheDirectory() + " 2>/dev/null\n";
+                return loggedCommand("rm -f " + getCacheDirectory() + "/slice*.mkv", false)
+                        + loggedCommand("rm -f " + getCacheDirectory() + "/*_slice_list.txt", false)
+                        + loggedCommand("mkdir -p " + getCacheDirectory() + " 2>/dev/null", false);
             }
         }
 
@@ -189,9 +184,10 @@ public class Comm {
             // TODO
             // --username
             // --password
-            downloadBuffer.append("youtube-dl --abort-on-error --no-color --recode-video mkv "
+            String command = "youtube-dl --abort-on-error --no-color --recode-video mkv "
                     + "--no-playlist --no-overwrites --no-post-overwrites --no-cache-dir --newline "
-                    + "--output '" + outputFormat + "' '" + url + "'\n");
+                    + "--output '" + outputFormat + "' '" + url + "'";
+            downloadBuffer.append(loggedCommand(command, true));
         }
 
         private String stripQuotes(String str) {
@@ -268,19 +264,21 @@ public class Comm {
                 errorBuffer.append("  This CoMM definition is empty!");
             }
 
-            joiningBuffer.append("cd " + getCacheDirectory() + "\n");
+            joiningBuffer.append(loggedCommand("cd " + getCacheDirectory(), false));
 
             String sliceListFileName = location.filename + "_slice_list.txt";
-            joiningBuffer.append("touch " + sliceListFileName + "\n");
+            joiningBuffer.append(loggedCommand("touch " + sliceListFileName, false));
 
+            joiningBuffer.append("echo \"for f in slice*.mkv; do echo \\\"file '\\$f'\\\" >> '"
+                    + sliceListFileName + "'; done\" | ts '[%Y-%m-%d %H:%M:%.S]'\n");
             String createSliceList = "for f in slice*.mkv; do echo \"file '$f'\" >> '"
                     + sliceListFileName + "'; done\n";
             joiningBuffer.append(createSliceList);
 
-            String concatFiles = String.format("ffmpeg -f concat -i '%s' -c copy -y '%s.mkv'\n", sliceListFileName, location.filename);
-            joiningBuffer.append(concatFiles);
+            String concatFiles = String.format("ffmpeg -f concat -i '%s' -c copy -y '%s.mkv'", sliceListFileName, location.filename);
+            joiningBuffer.append(loggedCommand(concatFiles, true));
 
-            joiningBuffer.append("cd -\n");
+            joiningBuffer.append(loggedCommand("cd -", false));
 
             // Get ready for the next one
             cleanupForNewComm();
@@ -311,7 +309,7 @@ public class Comm {
             // FIXME:
 //            slicingBuffer.append("eal \"ln -P " + targetFile + " " + sliceFile + "\"\n");
             // Until that works, let's just copy the file
-            slicingBuffer.append("cp " + targetFile + " " + sliceFile + "\n");
+            slicingBuffer.append(loggedCommand("cp " + targetFile + " " + sliceFile, false));
         }
 
         public void exitAdd_rng(comm_grammarParser.Add_rngContext ctx) {
@@ -364,8 +362,8 @@ public class Comm {
             String targetFile = String.format("'%s/vid%d.mkv'", getCacheDirectory(), url_s.hashCode());
             String sliceFile = String.format("'%s/slice%04d.mkv'", getCacheDirectory(), sliceIndex++);
             // Use ffmpeg to extract the slice from the target file
-            slicingBuffer.append("ffmpeg -i " + targetFile + " -ss " + startSeconds
-                    + " -t " + duration + " " + sliceFile + "\n");
+            slicingBuffer.append(loggedCommand("ffmpeg -i " + targetFile + " -ss " + startSeconds
+                    + " -t " + duration + " " + sliceFile, true));
         }
 
         public void exitAssign(comm_grammarParser.AssignContext ctx) {
