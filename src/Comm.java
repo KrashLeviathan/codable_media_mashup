@@ -51,8 +51,8 @@ public class Comm {
 
     private static void runScript(String pathToScript) throws IOException {
         System.out.println("[*] Running the script... Please be patient! If necessary, you can 'cat'\n"
-                + "the log to the terminal to see what's happening. The logs are located at:\n"
-                + "    " + pathToScript + ".log");
+                + "    the log to the terminal to see what's happening. The logs are located at:\n"
+                + "        " + pathToScript + ".log");
         ProcessBuilder pb = new ProcessBuilder("bash", pathToScript);
         File log = new File(pathToScript + ".log");
         // We delete and create it again to make sure we're not appending to an existing log file.
@@ -93,7 +93,7 @@ public class Comm {
     }
 
     private static void saveToFile(String filename, String directory, String contents) {
-        System.out.println("[*] Saving run script to " + directory + "/" + filename);
+        System.out.println("[*] Saving run script to\n        " + directory + "/" + filename);
 
         // create multiple directories at one time
         File dir = new File(directory);
@@ -175,7 +175,7 @@ public class Comm {
         /**
          * @return the String of all errors discovered during parsing.
          */
-        public String getErrors()         { return "\n" + errorBuffer.toString(); }
+        public String getErrors()         { return errorBuffer.toString(); }
 
         /**
          * @return the file name of the bash script that creates the current video.
@@ -240,13 +240,13 @@ public class Comm {
         }
 
         // Fetches the given variable value, writing to the errorBuffer if it's not there.
-        private String fetchVariable(String vname, String statement) throws IllegalArgumentException {
+        private String fetchVariable(String vname, String statement, int line) throws IllegalArgumentException {
             if (vname != null) {
                 if (variables.containsKey(vname)) {
                     return variables.get(vname);
                 } else {
                     errorStatus = true;
-                    errorBuffer.append("ERROR: " + statement + ";\n");
+                    errorBuffer.append("line " + line + " - " + statement + ";\n");
                     errorBuffer.append("  The variable '" + vname + "' does not exist!\n");
                 }
             }
@@ -256,6 +256,10 @@ public class Comm {
         // Returns the number of seconds implied by the given string.
         // The string should be formatted as `minutes:seconds`
         private int getSecondsFromTime(String time) throws IllegalArgumentException {
+            if (time == null) {
+                throw new IllegalArgumentException("A time string was missing or invalid.\n  Time strings must"
+                        + " be in the format 'minutes:seconds'.");
+            }
             String[] parts = time.split(":");
             if (parts.length != 2) {
                 errorStatus = true;
@@ -281,10 +285,12 @@ public class Comm {
                     + joiningBuffer.toString());
 
             // Print out what videos will be created
-            System.out.println("[*] Video Definition");
-            System.out.println("        Filename: " + location.filename);
-            System.out.println("        Cache:    " + location.cacheName);
-            System.out.println("        Path:     " + CommLocation.cachesDirectory + "/" + location.cacheName);
+            if (!errorStatus) {
+                System.out.println("[*] Video Definition");
+                System.out.println("        Filename: " + location.filename);
+                System.out.println("        Cache:    " + location.cacheName);
+                System.out.println("        Path:     " + CommLocation.cachesDirectory + "/" + location.cacheName);
+            }
 
             // Clean things up for the next run
             downloadBuffer = new StringBuffer();
@@ -323,8 +329,9 @@ public class Comm {
         public void exitComm(comm_grammarParser.CommContext ctx) {
             if (ctx.stmnt().size() == 0) {
                 errorStatus = true;
-                errorBuffer.append("ERROR: " + ctx.getText() + "\n");
-                errorBuffer.append("  This CoMM definition is empty!");
+                String line = "line " + ctx.start.getLine();
+                errorBuffer.append(line + " - " + ctx.getText() + "\n");
+                errorBuffer.append("  This CoMM definition is empty!\n");
             }
 
             joiningBuffer.append(loggedCommand("cd " + getCacheDirectory(), false));
@@ -357,7 +364,7 @@ public class Comm {
             String str_lit = (ctx.str_lit() != null) ? ctx.str_lit().getText() : null;
 
             try {
-                str_lit = fetchVariable(vname, ctx.getText());
+                str_lit = fetchVariable(vname, ctx.getText(), ctx.start.getLine());
             } catch (IllegalArgumentException e) {
                 if (errorStatus) {
                     return;
@@ -392,13 +399,13 @@ public class Comm {
 
             try{
                 if (url_v != null) {
-                    url_s = fetchVariable(url_v, ctx.getText());
+                    url_s = fetchVariable(url_v, ctx.getText(), ctx.start.getLine());
                 }
                 if (start_v != null) {
-                    start_s = fetchVariable(start_v, ctx.getText());
+                    start_s = fetchVariable(start_v, ctx.getText(), ctx.start.getLine());
                 }
                 if (stop_v != null) {
-                    stop_s = fetchVariable(stop_v, ctx.getText());
+                    stop_s = fetchVariable(stop_v, ctx.getText(), ctx.start.getLine());
                 }
             } catch (IllegalArgumentException e) {
                 if (errorStatus) {
@@ -417,14 +424,16 @@ public class Comm {
                 stopSeconds = getSecondsFromTime(stop_s);
             } catch (IllegalArgumentException exception) {
                 errorStatus = true;
-                errorBuffer.append("ERROR: " + ctx.getText() + "\n");
+                String line = "line " + ctx.start.getLine();
+                errorBuffer.append(line + " - " + ctx.getText() + "\n");
                 errorBuffer.append("  " + exception.getMessage() + "\n");
                 return;
             }
             int duration = stopSeconds - startSeconds;
             if (duration <= 0) {
                 errorStatus = true;
-                errorBuffer.append("ERROR: " + ctx.getText() + "\n");
+                String line = "line " + ctx.start.getLine();
+                errorBuffer.append(line + " - " + ctx.getText() + "\n");
                 errorBuffer.append("  Stop time cannot occur before the start time!\n");
                 return;
             }
@@ -447,7 +456,7 @@ public class Comm {
             String value = ctx.param().getText();
             if (ctx.param().vname() != null) {
                 try{
-                    value = fetchVariable(value, ctx.getText());
+                    value = fetchVariable(value, ctx.getText(), ctx.start.getLine());
                 } catch (IllegalArgumentException e) {
                     return;
                 }
@@ -473,15 +482,16 @@ public class Comm {
                 return;
             }
             location.filename = ctx.VNAME().getText();
-            location.cacheName = (ctx.cache() != null) ? ctx.cache().VNAME().getText() : location.filename;
+            location.cacheName = (ctx.cache() != null && ctx.cache().VNAME() != null) ? ctx.cache().VNAME().getText() : location.filename;
             boolean previousFilenameFound = false;
             for (CommLocation cl : previousLocations) {
                 if (cl.filename.equals(location.filename)) {
                     previousFilenameFound = true;
                     errorStatus = true;
-                    errorBuffer.append("ERROR: " + ctx.getText() + "\n");
+                    String line = "line " + ctx.start.getLine();
+                    errorBuffer.append(line + " -  " + ctx.getText() + "\n");
                     errorBuffer.append("  The filename '" + location.filename
-                            + "' has already been used in this file!");
+                            + "' has already been used in this file!\n");
                     return;
                 }
             }

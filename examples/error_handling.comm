@@ -1,0 +1,40 @@
+// Let's say everything that's NOT indented is valid code.
+
+        CoMM noContent;  // This CoMM will display an error
+                         // because there's no content.
+
+CoMM myFirstVid;
+
+add("someurl");
+
+        CoMM myFirstVid;  // Duplicate video name should error
+
+add("another url");
+
+        var floatNotAllowed  = 2.5;
+        var invalidChars!    = "fail";
+var pass                     = "pass";
+        var fail             = variableDoesNotExist;
+        var missingSemicolon = "Missing semicolon"
+
+var valid                    = "pass";
+
+        what on earth is this thing? Did I forget to put comment slashes?
+
+add("After all those errors, this still gets recognized because the parser keeps going through the file.");
+
+
+
+        CoMM secondVid cache("String literals not allowed here");
+
+var validUrl = "www.youtube.com/12345";
+        add(validUrl, nonExistentVariable, "0:30");
+        add(validUrl, "Invalid Time", "1:00");
+        add(validUrl, "1:00", 1:35);                    // missing quotes
+        add(validUrl, "1:00");                          // missing a parameter
+        add();                                          // no parameters
+        add(validUrl, "1:00", "2:00", "3:00");          // too many parameters
+
+config.noCache();   // valid
+        noCache();          // missing `config.`
+        config.noCache;     // missing parenthesis
