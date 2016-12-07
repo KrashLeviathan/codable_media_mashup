@@ -51,9 +51,8 @@ public class Comm {
     }
 
     private static void runScript(String pathToScript) throws IOException {
-        System.out.println("Running the script... Please be patient!\n"
-                + "If necessary, you can 'cat' the log to the terminal to see \n"
-                + "what's happening. The logs are located at:\n"
+        System.out.println("[*] Running the script... Please be patient! If necessary, you can 'cat'\n"
+                + "the log to the terminal to see what's happening. The logs are located at:\n"
                 + "    " + pathToScript + ".log");
         ProcessBuilder pb = new ProcessBuilder("bash", pathToScript);
         File log = new File(pathToScript + ".log");
@@ -92,7 +91,7 @@ public class Comm {
     }
 
     private static void saveToFile(String filename, String directory, String contents) {
-        System.out.println("Saving run script to " + directory + "/" + filename);
+        System.out.println("[*] Saving run script to " + directory + "/" + filename);
 
         // create multiple directories at one time
         File dir = new File(directory);
@@ -160,8 +159,9 @@ public class Comm {
                 return loggedCommand("rm -rf " + getCacheDirectory(), false)
                         + loggedCommand("mkdir -p " + getCacheDirectory() + " 2>/dev/null", false);
             } else {
-                return loggedCommand("rm -f " + getCacheDirectory() + "/slice*.mkv", false)
-                        + loggedCommand("rm -f " + getCacheDirectory() + "/*_slice_list.txt", false)
+                return loggedCommand("rm -f " + getCacheDirectory() + "/slice*.mkv "
+                        + getCacheDirectory() + "/*_slice_list.txt "
+                        + getCacheDirectory() + "/" + getScriptFilename() + ".log", false)
                         + loggedCommand("mkdir -p " + getCacheDirectory() + " 2>/dev/null", false);
             }
         }
@@ -235,6 +235,12 @@ public class Comm {
                     + "\n##########     Video Joining      ##########\n"
                     + joiningBuffer.toString());
 
+            // Print out what videos will be created
+            System.out.println("[*] Video Definition");
+            System.out.println("        Filename: " + location.filename);
+            System.out.println("        Cache:    " + location.cacheName);
+            System.out.println("        Path:     " + CommLocation.cachesDirectory + "/" + location.cacheName);
+
             // Clean things up for the next run
             downloadBuffer = new StringBuffer();
             slicingBuffer  = new StringBuffer();
@@ -307,7 +313,7 @@ public class Comm {
             // When we add an entire video file, there's no need to slice, so we're
             // just going to add a link to the file as a placeholder for this "slice"
             // FIXME:
-//            slicingBuffer.append("eal \"ln -P " + targetFile + " " + sliceFile + "\"\n");
+//            slicingBuffer.append(loggedCommand("ln -P " + targetFile + " " + sliceFile, false));
             // Until that works, let's just copy the file
             slicingBuffer.append(loggedCommand("cp " + targetFile + " " + sliceFile, false));
         }
@@ -402,7 +408,6 @@ public class Comm {
                 if (cl.filename.equals(location.filename)) {
                     previousFilenameFound = true;
                     errorStatus = true;
-                    // FIXME
                     errorBuffer.append("ERROR: " + ctx.getText() + "\n");
                     errorBuffer.append("  The filename '" + location.filename
                             + "' has already been used in this file!");
