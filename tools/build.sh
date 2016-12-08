@@ -38,5 +38,5 @@ cd -
 echo
 echo "To run, use the following command:"
 echo
-echo "    java -jar Comm input_file.comm"
+echo "    java -jar Comm.jar input_file.comm"
 echo
