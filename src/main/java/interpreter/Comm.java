@@ -7,13 +7,14 @@ import comm_grammar.*;
 import utils.*;
 
 import java.io.*;
+import java.util.concurrent.TimeUnit;
 
 public class Comm {
     private static final String USAGE = "USAGE:  java -jar Comm.jar <filename.comm>";
-//    public static final String C_YEL = "\033[01;33m";
-//    public static final String C_NRM = "\033[00m";
 
     public static void main(String[] args) throws Exception {
+        long startTime = System.currentTimeMillis();
+
         // create a CharStream that reads from the input
         InputStream in = getInputStream(args);
         ANTLRInputStream input = new ANTLRInputStream(in);
@@ -44,6 +45,12 @@ public class Comm {
             saveToFile(firstLoc.scriptName(), firstLoc.cacheDir(), generator.getResults());
             try {
                 runScript(firstLoc.cacheDir() + "/" + firstLoc.scriptName());
+                long timeTaken = System.currentTimeMillis() - startTime;
+                String elapsedTime = String.format("%d min, %d sec",
+                        TimeUnit.MILLISECONDS.toMinutes(timeTaken),
+                        TimeUnit.MILLISECONDS.toSeconds(timeTaken) -
+                                TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeTaken)));
+                System.out.println("Elapsed Time:  " + elapsedTime);
             } catch (IOException exception) {
                 System.err.println(exception.getMessage());
                 System.exit(1);

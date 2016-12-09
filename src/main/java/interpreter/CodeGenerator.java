@@ -71,6 +71,7 @@ public class CodeGenerator extends comm_grammarBaseListener {
     private static String loggedCommand(String command, boolean timed) {
         String time = (timed) ? "time " : "";
         String extraEcho = (timed) ? "echo\n" : "";
+        // The "ts" command is from the "moreutils" package and puts a timestamp on the output.
         return "echo\necho \"" + command + "\" | ts '[%Y-%m-%d %H:%M:%.S]'\necho\n"
                 + time + command + "\n" + extraEcho;
     }
@@ -79,10 +80,14 @@ public class CodeGenerator extends comm_grammarBaseListener {
     // and creating a new cache directory if needed).
     private String getFileManamentCommands() {
         if (cachingDisabled) {
+            // If caching is disabled, we remove the directory and then create it again
             return loggedCommand("rm -rf " + location.cacheDir(), false)
                     + loggedCommand("mkdir -p " + location.cacheDir() + " 2>/dev/null", false);
         } else {
-            return loggedCommand("rm -f " + location.cacheDir() + "/slice*.mkv "
+            // If caching isn't disabled, we just remove the slice and slice list files. The downloaded source
+            // video files will still remain in the cache. We use "2>/dev/null" to redirect errors to the abyss,
+            // because if the directory already exists, mkdir will give an error.
+            return loggedCommand("rm -f " + location.cacheDir() + "/slice* "
                     + location.cacheDir() + "/*_slice_list.txt ", false)
                     + loggedCommand("mkdir -p " + location.cacheDir() + " 2>/dev/null", false);
         }
@@ -104,9 +109,13 @@ public class CodeGenerator extends comm_grammarBaseListener {
         }
         urlHashCodes.add(hash);
         String outputFormat = location.cacheDir() + "/vid" + hash;
-        String command = "youtube-dl --abort-on-error --no-color --recode-video mkv "
-                + "--no-playlist --no-overwrites --no-post-overwrites --no-cache-dir --newline "
-                + "--output '" + outputFormat + "' '" + url + "'";
+        // We can change this extension later if we want, but I think youtube-dl defaults to mkv,
+        // so it's faster not to recode it as something else
+        String ext = "mkv";        // (currently supported in youtube-dl: mp4|flv|ogg|webm|mkv|avi)
+        // TODO: Explain youtube-dl flags
+        String command = "youtube-dl --abort-on-error --no-color --recode-video " + ext
+                + " --no-playlist --no-overwrites --no-post-overwrites --no-cache-dir --newline"
+                + " --output '" + outputFormat + "' '" + url + "'";
         downloadBuffer.append(loggedCommand(command, true));
     }
 
@@ -169,9 +178,9 @@ public class CodeGenerator extends comm_grammarBaseListener {
         // Print out what videos will be created
         if (!errorStatus) {
             System.out.println("[*] Video Definition");
-            System.out.println("        Filename: " + location.filename);
+            System.out.println("        Filename: " + location.filename + "." + location.extension);
             System.out.println("        Cache:    " + location.cacheName);
-            System.out.println("        Path:     " + CommLocation.cachesDirectory + "/" + location.cacheName);
+            System.out.println("        Path:     " + location.cacheDir());
         }
 
         // Clean things up for the next run
@@ -213,22 +222,31 @@ public class CodeGenerator extends comm_grammarBaseListener {
             errorBuffer.append(errMsg);
         }
 
+        // Change directories into the CoMM's cache directory
         joiningBuffer.append(loggedCommand("cd " + location.cacheDir(), false));
 
+        // Create the text file that will hold a list of all the slice filenames
         String sliceListFileName = location.filename + "_slice_list.txt";
         joiningBuffer.append(loggedCommand("touch " + sliceListFileName, false));
 
-        joiningBuffer.append("echo \"for f in slice*.mkv; do echo \\\"file '\\$f'\\\" >> '")
+        // Iterate through all the slice filenames and add them to the newly-created slice list file
+        joiningBuffer.append("echo \"for f in slice*; do echo \\\"file '\\$f'\\\" >> '")
                 .append(sliceListFileName)
                 .append("'; done\" | ts '[%Y-%m-%d %H:%M:%.S]'\n");
-        String createSliceList = "for f in slice*.mkv; do echo \"file '$f'\" >> '"
-                + sliceListFileName + "'; done\n";
-        joiningBuffer.append(createSliceList);
+        joiningBuffer.append("for f in slice*; do echo \"file '$f'\" >> '")
+                .append(sliceListFileName)
+                .append("'; done\n");
 
-        String concatFiles = String.format("ffmpeg -f concat -i '%s' -c copy -y '%s.mkv'",
-                sliceListFileName, location.filename);
+        // Use ffmpeg to concatenate all the slices from the slice file list
+        // "-f concat" says we're concatenating the files
+        // "-i '%s'" is the input file, which lists all the slice filenames
+        // "-y" forces overwrite of the output file if it already exists
+        // "%s.%s" is the file with extension
+        String concatFiles = String.format("ffmpeg -f concat -i '%s' -y '%s.%s'",
+                sliceListFileName, location.filename, location.extension);
         joiningBuffer.append(loggedCommand(concatFiles, true));
 
+        // Return to the root directory
         joiningBuffer.append(loggedCommand("cd -", false));
 
         // Get ready for the next one
