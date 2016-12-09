@@ -16,7 +16,7 @@ public class Comm {
     public static final String C_YEL = "\033[01;33m";
     public static final String C_NRM = "\033[00m";
 
-    public static void main(String[]args) throws Exception {
+    public static void main(String[] args) throws Exception {
         // create a CharStream that reads from the input
         InputStream in = getInputStream(args);
         ANTLRInputStream input = new ANTLRInputStream(in);

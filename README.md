@@ -2,7 +2,7 @@
 
 > A language. A command line tool. A quick and dirty video editor for the power user.
 
-![Logo](resources/logo.svg.png "Codable Media Mashup")
+![Logo](images/logo.svg.png "Codable Media Mashup")
 
 Codable Media Mashup (CoMM) is both a language and a command line tool used for slicing
 and splicing online videos together. The purpose is to allow people to quickly and
