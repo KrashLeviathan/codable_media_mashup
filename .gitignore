@@ -176,7 +176,5 @@ hs_err_pid*
 
 .idea
 *.tokens
-src/*.java
-!src/Comm.java
-!src/SoundUtils.java
+src/main/java/comm_grammar/*.java
 comm_caches

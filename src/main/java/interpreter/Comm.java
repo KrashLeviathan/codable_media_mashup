@@ -1,6 +1,11 @@
+package interpreter;
+
 // import ANTLR's runtime libraries
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
+
+import comm_grammar.*;
+import utils.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;

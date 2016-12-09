@@ -1,5 +1,9 @@
 grammar comm_grammar;
 
+@header {
+package comm_grammar;
+}
+
 fragment ALNUM
     : ALPHA | DIGIT ;
 fragment ALPHA

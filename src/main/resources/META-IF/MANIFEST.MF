@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
 Created-By: Nathan Karasch
-Main-Class: Comm
+Main-Class: interpreter.Comm
 Class-Path: antlr-4.5.3-complete.jar
