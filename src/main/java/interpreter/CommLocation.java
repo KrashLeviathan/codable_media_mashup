@@ -2,7 +2,7 @@ package interpreter;
 
 /**
  * Stores the filename and cache directory for a single CoMM definition.
- * 
+ *
  * Ex:
  * CoMM MyFile;                       // filename = cacheName = "MyFile"
  * CoMM AnotherFile cache(MyCache);   // filename = "AnotherFile", cacheName = "MyCache"
