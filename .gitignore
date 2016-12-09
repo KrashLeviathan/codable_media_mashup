@@ -178,4 +178,5 @@ hs_err_pid*
 *.tokens
 src/*.java
 !src/Comm.java
+!src/SoundUtils.java
 comm_caches

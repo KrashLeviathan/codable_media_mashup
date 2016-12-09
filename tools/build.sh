@@ -22,7 +22,7 @@ echo -e "${C_YEL}antlr4 comm_grammar.g4$1${C_NRM}"
 java -Xmx500M -cp "../antlr-4.5.3-complete.jar" org.antlr.v4.Tool comm_grammar.g4
 
 echo -e "${C_YEL}javac Comm.java comm_*.java${C_NRM}"
-javac -cp "../antlr-4.5.3-complete.jar" Comm.java comm_*.java
+javac -cp "../antlr-4.5.3-complete.jar" Comm.java comm_*.java SoundUtils.java
 
 echo -e "${C_YEL}jar cmf0 META-IF/MANIFEST.MF ../Comm.jar *${C_NRM}"
 jar cmf0 META-IF/MANIFEST.MF ../Comm.jar *

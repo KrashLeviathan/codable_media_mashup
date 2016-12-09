@@ -138,10 +138,8 @@ Sets a configuration option for the CoMM video as a whole. Options include
 the following:
 
 - `config.noCache()` - Tells the program NOT to used cached video from previous runs.
-  Typically the program will cache videos for a given CoMM for 24 hours. If the
-  program is run again after 24 hours, it will need to download the video URLs
-  again. By adding `config.noCache()`, it will slow down same-day re-runs, but if you
-  need to pull a newly-updated version of a video, use this option.
+  It will slow down re-runs, but you're guaranteed to get the most recent versions of
+  the source videos.
   *NOTE: This will disregard any `cache()` option given in the `CoMM` definition.*
 - More to come! (see below)
 
@@ -262,13 +260,13 @@ implemented yet.*
 ## Future Development Plans
 
 The original plan was to host this tool on a web server that gets accessed through
-the browser. The exerience would look like so:
+the browser. The experience would look like so:
 
 1. The user uploads a CoMM file or enters a ComM definition in a textarea.
 2. The file is sent to the server, which runs the command line application.
 3. Once complete, the video file is sent back to the user for download.
 
-The cached files would only stick around for 24 hours before being automagically
+The cached files would only stick around for 24 hours before being auto-magically
 cleaned up by the server. Restrictions would need to be in place to prevent abuse,
 but overall I think it would be pretty doable. I like the idea of letting a really
 fast server do the downloading/processing instead of using my own computer, thus
@@ -281,6 +279,7 @@ Other potential features include:
 - Using local video files
 - Finer precision on time start/stop (nanoseconds?)
 - More output format options (probably prioritizing mp4)
+- Output to audio (mp3)
 
 ## Contributing
 

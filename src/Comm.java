@@ -69,6 +69,8 @@ public class Comm {
         } catch (InterruptedException exception) {
             System.err.println(exception.getMessage());
             System.exit(1);
+        } finally {
+            try { SoundUtils.tone(1000, 1000, 0.2); } catch (Exception e) { }
         }
     }
 
