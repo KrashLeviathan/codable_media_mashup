@@ -1,17 +1,21 @@
-// import ANTLR's runtime libraries
+package interpreter;
+
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
+
+import comm_grammar.*;
+import utils.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.io.*;
 
 public class Comm {
-    public static final String USAGE = "USAGE:  java Comm <filename.comm>";
-    public static final String C_YEL = "\033[01;33m";
-    public static final String C_NRM = "\033[00m";
+    private static final String USAGE = "USAGE:  java -jar Comm.jar <filename.comm>";
+//    public static final String C_YEL = "\033[01;33m";
+//    public static final String C_NRM = "\033[00m";
 
-    public static void main(String[]args) throws Exception {
+    public static void main(String[] args) throws Exception {
         // create a CharStream that reads from the input
         InputStream in = getInputStream(args);
         ANTLRInputStream input = new ANTLRInputStream(in);
@@ -56,6 +60,7 @@ public class Comm {
         ProcessBuilder pb = new ProcessBuilder("bash", pathToScript);
         File log = new File(pathToScript + ".log");
         // We delete and create it again to make sure we're not appending to an existing log file.
+        //noinspection ResultOfMethodCallIgnored
         log.delete();
         log = new File(pathToScript + ".log");
         pb.redirectErrorStream(true);
@@ -70,7 +75,11 @@ public class Comm {
             System.err.println(exception.getMessage());
             System.exit(1);
         } finally {
-            try { SoundUtils.tone(1000, 1000, 0.2); } catch (Exception e) { }
+            try {
+                // Play a sound when the script is finished running
+                SoundUtils.tone(1000, 1000, 0.2);
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -99,7 +108,8 @@ public class Comm {
 
         // create multiple directories at one time
         File dir = new File(directory);
-        boolean successful = dir.mkdirs();
+        //noinspection ResultOfMethodCallIgnored
+        dir.mkdirs();
 
         try {
             PrintWriter out = new PrintWriter(directory + "/" + filename, "UTF-8");
@@ -117,20 +127,26 @@ public class Comm {
     private static class CommLocation {
         private static final String cachesDirectory = "./comm_caches";
         private static final String scriptPrefix = "RUN_";
-        public String filename;
-        public String cacheName = "default";
-        public String scriptName() { return scriptPrefix + filename + ".bash"; }
-        public String cacheDir() { return cachesDirectory + "/" + cacheName; }
+        String filename;
+        String cacheName = "default";
+
+        String scriptName() {
+            return scriptPrefix + filename + ".bash";
+        }
+
+        String cacheDir() {
+            return cachesDirectory + "/" + cacheName;
+        }
     }
 
     public static class comm_grammar_Code_Generator extends comm_grammarBaseListener {
         // The buffers are populated as the parse tree is walked, and then when it's complete
         // they're used to generate the bash script
-        private StringBuffer resultsBuffer  = new StringBuffer();
+        private StringBuffer resultsBuffer = new StringBuffer();
         private StringBuffer downloadBuffer = new StringBuffer();
-        private StringBuffer slicingBuffer  = new StringBuffer();
-        private StringBuffer joiningBuffer  = new StringBuffer();
-        private StringBuffer errorBuffer    = new StringBuffer();
+        private StringBuffer slicingBuffer = new StringBuffer();
+        private StringBuffer joiningBuffer = new StringBuffer();
+        private StringBuffer errorBuffer = new StringBuffer();
 
         // This gets set to true when text is added to the errorBuffer. The bash script will
         // not run, and the errors will be shown to the user.
@@ -157,13 +173,13 @@ public class Comm {
         /**
          * Keeps track of the directory information for all CoMMs that get defined.
          */
-        public ArrayList<CommLocation> previousLocations = new ArrayList<>();
+        ArrayList<CommLocation> previousLocations = new ArrayList<>();
 
         /**
          * Returns the contents of the bash script that does all the video magic.
          * This only gets called after the parse tree walker is finished walkin'.
          */
-        public String getResults() {
+        String getResults() {
             return "#!/usr/bin/env bash\n\n"
                     + "# Codable Media Mashup (CoMM) bash script\n\n"
                     + resultsBuffer.toString();
@@ -172,22 +188,16 @@ public class Comm {
         /**
          * @return `true` if errors were found during parsing; otherwise `false`.
          */
-        public boolean containsErrors()   { return errorStatus;                   }
+        boolean containsErrors() {
+            return errorStatus;
+        }
 
         /**
          * @return the String of all errors discovered during parsing.
          */
-        public String getErrors()         { return errorBuffer.toString(); }
-
-        /**
-         * @return the file name of the bash script that creates the current video.
-         */
-        public String getScriptFilename() { return location.scriptName();         }
-
-        /**
-         * @return the relative directory of the cache containing the current video's files.
-         */
-        public String getCacheDirectory() { return location.cacheDir();           }
+        String getErrors() {
+            return errorBuffer.toString();
+        }
 
         // Returns the bash commands to echo back the command with a timestamp and then run it.
         private static String loggedCommand(String command, boolean timed) {
@@ -201,12 +211,12 @@ public class Comm {
         // and creating a new cache directory if needed).
         private String getFileManamentCommands() {
             if (cachingDisabled) {
-                return loggedCommand("rm -rf " + getCacheDirectory(), false)
-                        + loggedCommand("mkdir -p " + getCacheDirectory() + " 2>/dev/null", false);
+                return loggedCommand("rm -rf " + location.cacheDir(), false)
+                        + loggedCommand("mkdir -p " + location.cacheDir() + " 2>/dev/null", false);
             } else {
-                return loggedCommand("rm -f " + getCacheDirectory() + "/slice*.mkv "
-                        + getCacheDirectory() + "/*_slice_list.txt ", false)
-                        + loggedCommand("mkdir -p " + getCacheDirectory() + " 2>/dev/null", false);
+                return loggedCommand("rm -f " + location.cacheDir() + "/slice*.mkv "
+                        + location.cacheDir() + "/*_slice_list.txt ", false)
+                        + loggedCommand("mkdir -p " + location.cacheDir() + " 2>/dev/null", false);
             }
         }
 
@@ -225,7 +235,7 @@ public class Comm {
                 return;
             }
             urlHashCodes.add(hash);
-            String outputFormat = getCacheDirectory() + "/vid" + hash;
+            String outputFormat = location.cacheDir() + "/vid" + hash;
             String command = "youtube-dl --abort-on-error --no-color --recode-video mkv "
                     + "--no-playlist --no-overwrites --no-post-overwrites --no-cache-dir --newline "
                     + "--output '" + outputFormat + "' '" + url + "'";
@@ -234,7 +244,7 @@ public class Comm {
 
         // Strips double quotes from around the given string, if it has them. Otherwise just returns the string.
         private String stripQuotes(String str) {
-            if (str != null && str.charAt(0) == '"' && str.charAt(str.length()-1)=='"') {
+            if (str != null && str.length() >= 2 && str.charAt(0) == '"' && str.charAt(str.length() - 1) == '"') {
                 return str.substring(1, str.length() - 1);
             } else {
                 return str;
@@ -248,8 +258,9 @@ public class Comm {
                     return variables.get(vname);
                 } else {
                     errorStatus = true;
-                    errorBuffer.append("line " + line + " - " + statement + ";\n");
-                    errorBuffer.append("  The variable '" + vname + "' does not exist!\n");
+                    String errMsg = "line " + line + " - " + statement + ";\n"
+                            + "  The variable '" + vname + "' does not exist!\n";
+                    errorBuffer.append(errMsg);
                 }
             }
             throw new IllegalArgumentException("The variable '" + vname + "' does not exist!");
@@ -273,8 +284,8 @@ public class Comm {
         // Writes all the commands generated for the current CoMM definition to the resultsBuffer,
         // and then resets the instance variables in preparation for another CoMM definition.
         private void cleanupForNewComm() {
-            // TODO: Add other metadata here, with credit back to our site / authors
-            resultsBuffer.append("\n\n############################################\n"
+            // TODO: Add other metadata here as necessary
+            String resultAddition = "\n\n############################################\n"
                     + "#   Filename: " + location.filename + "\n"
                     + "#   Cache Folder: " + location.cacheName + "\n"
                     + "\n##########     File Management    ##########\n"
@@ -284,7 +295,8 @@ public class Comm {
                     + "\n##########     Video Slicing      ##########\n"
                     + slicingBuffer.toString()
                     + "\n##########     Video Joining      ##########\n"
-                    + joiningBuffer.toString());
+                    + joiningBuffer.toString();
+            resultsBuffer.append(resultAddition);
 
             // Print out what videos will be created
             if (!errorStatus) {
@@ -296,8 +308,8 @@ public class Comm {
 
             // Clean things up for the next run
             downloadBuffer = new StringBuffer();
-            slicingBuffer  = new StringBuffer();
-            joiningBuffer  = new StringBuffer();
+            slicingBuffer = new StringBuffer();
+            joiningBuffer = new StringBuffer();
             previousLocations.add(location);
             location = new CommLocation();
             sliceIndex = 0;
@@ -308,8 +320,6 @@ public class Comm {
             // redownload them if they're already in the cache.
             urlHashCodes = new ArrayList<>();
         }
-
-
 
 
         // #######################  OVERWRITTEN ANTLR PARSER METHODS  ###########################
@@ -326,23 +336,23 @@ public class Comm {
          * When a CoMM definition is complete, all the "join" bash commands are added to the
          * joining buffer, and `cleanupForNewComm()` is called to get things ready for more CoMM
          * definitions.
-         * @param ctx
          */
         public void exitComm(comm_grammarParser.CommContext ctx) {
             if (ctx.stmnt().size() == 0) {
                 errorStatus = true;
-                String line = "line " + ctx.start.getLine();
-                errorBuffer.append(line + " - " + ctx.getText() + "\n");
-                errorBuffer.append("  This CoMM definition is empty!\n");
+                String errMsg = "line " + ctx.start.getLine() + " - " + ctx.getText() + "\n"
+                        + "  This CoMM definition is empty!\n";
+                errorBuffer.append(errMsg);
             }
 
-            joiningBuffer.append(loggedCommand("cd " + getCacheDirectory(), false));
+            joiningBuffer.append(loggedCommand("cd " + location.cacheDir(), false));
 
             String sliceListFileName = location.filename + "_slice_list.txt";
             joiningBuffer.append(loggedCommand("touch " + sliceListFileName, false));
 
-            joiningBuffer.append("echo \"for f in slice*.mkv; do echo \\\"file '\\$f'\\\" >> '"
-                    + sliceListFileName + "'; done\" | ts '[%Y-%m-%d %H:%M:%.S]'\n");
+            joiningBuffer.append("echo \"for f in slice*.mkv; do echo \\\"file '\\$f'\\\" >> '")
+                    .append(sliceListFileName)
+                    .append("'; done\" | ts '[%Y-%m-%d %H:%M:%.S]'\n");
             String createSliceList = "for f in slice*.mkv; do echo \"file '$f'\" >> '"
                     + sliceListFileName + "'; done\n";
             joiningBuffer.append(createSliceList);
@@ -359,7 +369,6 @@ public class Comm {
 
         /**
          * Writes to the slicingBuffer the bash commands for adding an entire video.
-         * @param ctx
          */
         public void exitAdd_all(comm_grammarParser.Add_allContext ctx) {
             String vname = (ctx.vname() != null) ? ctx.vname().getText() : null;
@@ -377,11 +386,11 @@ public class Comm {
 
             downloadIfNeeded(str_lit);
 
-            String targetFile = String.format("'%s/vid%d.mkv'", getCacheDirectory(), str_lit.hashCode());
-            String sliceFile = String.format("'%s/slice%04d.mkv'", getCacheDirectory(), sliceIndex++);
+            String targetFile = String.format("'%s/vid%d.mkv'", location.cacheDir(), str_lit.hashCode());
+            String sliceFile = String.format("'%s/slice%04d.mkv'", location.cacheDir(), sliceIndex++);
             // When we add an entire video file, there's no need to slice, so we're
             // just going to add a link to the file as a placeholder for this "slice"
-            // FIXME:
+            // FIXME: Maybe try to make this a link instead of a copy in the future
 //            slicingBuffer.append(loggedCommand("ln -P " + targetFile + " " + sliceFile, false));
             // Until that works, let's just copy the file
             slicingBuffer.append(loggedCommand("cp " + targetFile + " " + sliceFile, false));
@@ -389,7 +398,6 @@ public class Comm {
 
         /**
          * Writes to the slicingBuffer the bash commands for adding part of a video.
-         * @param ctx
          */
         public void exitAdd_rng(comm_grammarParser.Add_rngContext ctx) {
             String url_v = (ctx.v1 != null) ? ctx.v1.getText() : null;
@@ -399,7 +407,7 @@ public class Comm {
             String stop_v = (ctx.v3 != null) ? ctx.v3.getText() : null;
             String stop_s = (ctx.s3 != null) ? ctx.s3.getText() : null;
 
-            try{
+            try {
                 if (url_v != null) {
                     url_s = fetchVariable(url_v, ctx.getText(), ctx.start.getLine());
                 }
@@ -426,24 +434,24 @@ public class Comm {
                 stopSeconds = getSecondsFromTime(stop_s);
             } catch (IllegalArgumentException exception) {
                 errorStatus = true;
-                String line = "line " + ctx.start.getLine();
-                errorBuffer.append(line + " - " + ctx.getText() + "\n");
-                errorBuffer.append("  " + exception.getMessage() + "\n");
+                String errMsg = "line " + ctx.start.getLine() + " - " + ctx.getText() + "\n"
+                        + "  " + exception.getMessage() + "\n";
+                errorBuffer.append(errMsg);
                 return;
             }
             int duration = stopSeconds - startSeconds;
             if (duration <= 0) {
                 errorStatus = true;
-                String line = "line " + ctx.start.getLine();
-                errorBuffer.append(line + " - " + ctx.getText() + "\n");
-                errorBuffer.append("  Stop time cannot occur before the start time!\n");
+                String errMsg = "line " + ctx.start.getLine() + " - " + ctx.getText() + "\n"
+                        + "  Stop time cannot occur before the start time!\n";
+                errorBuffer.append(errMsg);
                 return;
             }
 
             downloadIfNeeded(url_s);
 
-            String targetFile = String.format("'%s/vid%d.mkv'", getCacheDirectory(), url_s.hashCode());
-            String sliceFile = String.format("'%s/slice%04d.mkv'", getCacheDirectory(), sliceIndex++);
+            String targetFile = String.format("'%s/vid%d.mkv'", location.cacheDir(), url_s.hashCode());
+            String sliceFile = String.format("'%s/slice%04d.mkv'", location.cacheDir(), sliceIndex++);
             // Use ffmpeg to extract the slice from the target file
             slicingBuffer.append(loggedCommand("ffmpeg -i " + targetFile + " -ss " + startSeconds
                     + " -t " + duration + " " + sliceFile, true));
@@ -451,13 +459,12 @@ public class Comm {
 
         /**
          * Assigns a value to a variable, which can be used later in the CoMM.
-         * @param ctx
          */
         public void exitAssign(comm_grammarParser.AssignContext ctx) {
             String vname = ctx.VNAME().getText();
             String value = ctx.param().getText();
             if (ctx.param().vname() != null) {
-                try{
+                try {
                     value = fetchVariable(value, ctx.getText(), ctx.start.getLine());
                 } catch (IllegalArgumentException e) {
                     return;
@@ -468,7 +475,6 @@ public class Comm {
 
         /**
          * Caching won't be used for this video; it will download all videos in the current CoMM definition.
-         * @param ctx
          */
         public void exitNo_cach(comm_grammarParser.No_cachContext ctx) {
             cachingDisabled = true;
@@ -476,7 +482,6 @@ public class Comm {
 
         /**
          * Finds the `CoMM <filename> [cache(cachename)];` statement, and sets the filename and cacheName variables.
-         * @param ctx
          */
         public void exitComstmt(comm_grammarParser.ComstmtContext ctx) {
             if (ctx.VNAME() == null) {
@@ -485,15 +490,12 @@ public class Comm {
             }
             location.filename = ctx.VNAME().getText();
             location.cacheName = (ctx.cache() != null && ctx.cache().VNAME() != null) ? ctx.cache().VNAME().getText() : location.filename;
-            boolean previousFilenameFound = false;
             for (CommLocation cl : previousLocations) {
                 if (cl.filename.equals(location.filename)) {
-                    previousFilenameFound = true;
                     errorStatus = true;
-                    String line = "line " + ctx.start.getLine();
-                    errorBuffer.append(line + " -  " + ctx.getText() + "\n");
-                    errorBuffer.append("  The filename '" + location.filename
-                            + "' has already been used in this file!\n");
+                    String errMsg = "line " + ctx.start.getLine() + " -  " + ctx.getText() + "\n"
+                            + "  The filename '" + location.filename + "' has already been used in this file!\n";
+                    errorBuffer.append(errMsg);
                     return;
                 }
             }
@@ -502,7 +504,6 @@ public class Comm {
         /**
          * If the Lexer or Parser found any problems, they should set the errorStatus to `true` so the bash
          * script doesn't get run.
-         * @param node
          */
         public void visitErrorNode(ErrorNode node) {
             errorStatus = true;
