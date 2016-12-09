@@ -1,6 +1,5 @@
 package interpreter;
 
-// import ANTLR's runtime libraries
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 
@@ -76,8 +75,11 @@ public class Comm {
             System.err.println(exception.getMessage());
             System.exit(1);
         } finally {
-            // Play a sound when the script is finished running
-            try { SoundUtils.tone(1000, 1000, 0.2); } catch (Exception ignored) { }
+            try {
+                // Play a sound when the script is finished running
+                SoundUtils.tone(1000, 1000, 0.2);
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -127,18 +129,24 @@ public class Comm {
         private static final String scriptPrefix = "RUN_";
         String filename;
         String cacheName = "default";
-        String scriptName() { return scriptPrefix + filename + ".bash"; }
-        String cacheDir() { return cachesDirectory + "/" + cacheName; }
+
+        String scriptName() {
+            return scriptPrefix + filename + ".bash";
+        }
+
+        String cacheDir() {
+            return cachesDirectory + "/" + cacheName;
+        }
     }
 
     public static class comm_grammar_Code_Generator extends comm_grammarBaseListener {
         // The buffers are populated as the parse tree is walked, and then when it's complete
         // they're used to generate the bash script
-        private StringBuffer resultsBuffer  = new StringBuffer();
+        private StringBuffer resultsBuffer = new StringBuffer();
         private StringBuffer downloadBuffer = new StringBuffer();
-        private StringBuffer slicingBuffer  = new StringBuffer();
-        private StringBuffer joiningBuffer  = new StringBuffer();
-        private StringBuffer errorBuffer    = new StringBuffer();
+        private StringBuffer slicingBuffer = new StringBuffer();
+        private StringBuffer joiningBuffer = new StringBuffer();
+        private StringBuffer errorBuffer = new StringBuffer();
 
         // This gets set to true when text is added to the errorBuffer. The bash script will
         // not run, and the errors will be shown to the user.
@@ -180,12 +188,16 @@ public class Comm {
         /**
          * @return `true` if errors were found during parsing; otherwise `false`.
          */
-        boolean containsErrors()   { return errorStatus;                   }
+        boolean containsErrors() {
+            return errorStatus;
+        }
 
         /**
          * @return the String of all errors discovered during parsing.
          */
-        String getErrors()         { return errorBuffer.toString(); }
+        String getErrors() {
+            return errorBuffer.toString();
+        }
 
         // Returns the bash commands to echo back the command with a timestamp and then run it.
         private static String loggedCommand(String command, boolean timed) {
@@ -232,7 +244,7 @@ public class Comm {
 
         // Strips double quotes from around the given string, if it has them. Otherwise just returns the string.
         private String stripQuotes(String str) {
-            if (str != null && str.length() >= 2 && str.charAt(0) == '"' && str.charAt(str.length()-1)=='"') {
+            if (str != null && str.length() >= 2 && str.charAt(0) == '"' && str.charAt(str.length() - 1) == '"') {
                 return str.substring(1, str.length() - 1);
             } else {
                 return str;
@@ -296,8 +308,8 @@ public class Comm {
 
             // Clean things up for the next run
             downloadBuffer = new StringBuffer();
-            slicingBuffer  = new StringBuffer();
-            joiningBuffer  = new StringBuffer();
+            slicingBuffer = new StringBuffer();
+            joiningBuffer = new StringBuffer();
             previousLocations.add(location);
             location = new CommLocation();
             sliceIndex = 0;
@@ -308,8 +320,6 @@ public class Comm {
             // redownload them if they're already in the cache.
             urlHashCodes = new ArrayList<>();
         }
-
-
 
 
         // #######################  OVERWRITTEN ANTLR PARSER METHODS  ###########################
@@ -397,7 +407,7 @@ public class Comm {
             String stop_v = (ctx.v3 != null) ? ctx.v3.getText() : null;
             String stop_s = (ctx.s3 != null) ? ctx.s3.getText() : null;
 
-            try{
+            try {
                 if (url_v != null) {
                     url_s = fetchVariable(url_v, ctx.getText(), ctx.start.getLine());
                 }
@@ -454,7 +464,7 @@ public class Comm {
             String vname = ctx.VNAME().getText();
             String value = ctx.param().getText();
             if (ctx.param().vname() != null) {
-                try{
+                try {
                     value = fetchVariable(value, ctx.getText(), ctx.start.getLine());
                 } catch (IllegalArgumentException e) {
                     return;
