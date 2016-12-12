@@ -262,7 +262,7 @@ implemented yet.*
 The original plan was to host this tool on a web server that gets accessed through
 the browser. The experience would look like so:
 
-1. The user uploads a CoMM file or enters a ComM definition in a textarea.
+1. The user uploads a CoMM file or enters a CoMM definition in a textarea.
 2. The file is sent to the server, which runs the command line application.
 3. Once complete, the video file is sent back to the user for download.
 
