@@ -58,7 +58,14 @@ tools/build.sh
 3) **Run it**
 
 ```
-java -jar Comm.jar <input_file.comm>
+USAGE:
+  java -jar Comm.jar [OPTIONS] <filename.comm>
+OPTIONS:
+  -h | --help                 Shows this usage message.
+  -t | --translation-only     Translates the CoMM to a bash script,
+                              but doesn't execute the script.
+EXAMPLE:
+  java -jar Comm.jar -t path/to/my/file.comm
 ```
 
 If no input file is provided, it will look for input from stdin.

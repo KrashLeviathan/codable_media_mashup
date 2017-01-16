@@ -10,13 +10,23 @@ import java.io.*;
 import java.util.concurrent.TimeUnit;
 
 public class Comm {
-    private static final String USAGE = "USAGE:  java -jar Comm.jar <filename.comm>";
+    private static final String USAGE = "USAGE:\n  java -jar Comm.jar [OPTIONS] <filename.comm>\nOPTIONS:\n" +
+            "  -h | --help                 Shows this usage message.\n" +
+            "  -t | --translation-only     Translates the CoMM to a bash script,\n" +
+            "                              but doesn't execute the script.\n" +
+            "EXAMPLE:\n" +
+            "  java -jar Comm.jar -t path/to/my/file.comm";
+
+    private static String commFilename;
+    private static boolean translationOnly = false;
 
     public static void main(String[] args) throws Exception {
         long startTime = System.currentTimeMillis();
 
+        parseArguments(args);
+
         // create a CharStream that reads from the input
-        InputStream in = getInputStream(args);
+        InputStream in = getInputStream(commFilename);
         ANTLRInputStream input = new ANTLRInputStream(in);
 
         // create a lexer that feeds off of input CharStream
@@ -44,7 +54,9 @@ public class Comm {
             CommLocation firstLoc = generator.previousLocations.get(0);
             saveToFile(firstLoc.scriptName(), firstLoc.cacheDir(), generator.getResults());
             try {
-                runScript(firstLoc.cacheDir() + "/" + firstLoc.scriptName());
+                if (!translationOnly) {
+                    runScript(firstLoc.cacheDir() + "/" + firstLoc.scriptName());
+                }
                 long timeTaken = System.currentTimeMillis() - startTime;
                 String elapsedTime = String.format("%d min, %d sec",
                         TimeUnit.MILLISECONDS.toMinutes(timeTaken),
@@ -55,6 +67,36 @@ public class Comm {
                 System.err.println(exception.getMessage());
                 System.exit(1);
             }
+        }
+    }
+
+    private static void parseArguments(String[] args) {
+        boolean filenameFound = false;
+
+        for (String arg : args) {
+            if (arg.charAt(0) == '-') {
+                parseOption(arg);
+            } else if (!filenameFound) {
+                filenameFound = true;
+                commFilename = arg;
+            } else {
+                System.err.println("UNKNOWN TOKEN: " + arg + "\n");
+                System.err.println(USAGE);
+                System.exit(1);
+            }
+        }
+    }
+
+    private static void parseOption(String arg) {
+        if (arg.equals("-t") || arg.equals("--translation-only")) {
+            translationOnly = true;
+        } else if (arg.equals("-h") || arg.equals("--help")) {
+            System.out.println(USAGE);
+            System.exit(0);
+        } else {
+            System.err.println("UNKNOWN OPTION: " + arg + "\n");
+            System.err.println(USAGE);
+            System.exit(1);
         }
     }
 
@@ -88,18 +130,13 @@ public class Comm {
         }
     }
 
-    private static InputStream getInputStream(String[] args) {
-        if (args.length == 0) {
+    private static InputStream getInputStream(String arg) {
+        if (arg == null) {
             System.out.println("No filename provided. Using stdin...");
             return System.in;
         }
-        if (args.length > 1) {
-            System.err.println("Too many parameters provided!");
-            System.err.println(USAGE);
-            System.exit(1);
-        }
         try {
-            return new FileInputStream(args[0]);
+            return new FileInputStream(arg);
         } catch (IOException exception) {
             System.err.println(exception.getMessage());
             System.exit(1);
