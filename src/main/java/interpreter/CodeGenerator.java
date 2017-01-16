@@ -38,6 +38,24 @@ public class CodeGenerator extends comm_grammarBaseListener {
     // Directory information for the current CoMM
     private CommLocation location = new CommLocation();
 
+    // Stores information about credentials for certain video downloads
+    private ArrayList<Credential> credentials = new ArrayList<>();
+    private class Video {
+        public String urlHashCode;
+        public String username;
+        public String password;
+
+        public Video(String url) {
+
+        }
+
+        public Credential(String uhc, String un, String p) {
+            urlHashCode = uhc;
+            username = un;
+            password = p;
+        }
+    }
+
     /**
      * Keeps track of the directory information for all CoMMs that get defined.
      */
@@ -357,6 +375,41 @@ public class CodeGenerator extends comm_grammarBaseListener {
             }
         }
         variables.put(vname, stripQuotes(value));
+    }
+
+    /**
+     * Requests username and password for the given set of videos.
+     */
+    public void exitReq_vc(comm_grammarParser.Req_vcContext ctx) {
+        String vname;
+        String str_lit;
+        ArrayList<String> str_lits = new ArrayList<>();
+
+        // Fetch the string literal for any variable parameters, and add them to str_lits
+        try {
+            for (int i = 0; i < ctx.vname().size(); i++) {
+                vname = ctx.vname().get(i).getText();
+                str_lit = fetchVariable(vname, ctx.getText(), ctx.start.getLine());
+                str_lits.add(str_lit);
+            }
+        } catch (IllegalArgumentException e) {
+            if (errorStatus) {
+                return;
+            }
+        }
+
+        // Add any string literal parameters to str_lits
+        for (i = 0; i < ctx.str_lit().size(); i++) {
+            str_lit = ctx.str_lit().get(i).getText();
+            str_lits.add(str_lit);
+        }
+
+        // Strip quotes from each one and download if needed
+        for (i = 0; i < str_lits.size(); i++) {
+            str_lit = stripQuotes(str_lits.get(i));
+            // TODO: The download part needs to be reworked!
+            downloadIfNeeded(str_lit);
+        }
     }
 
     /**

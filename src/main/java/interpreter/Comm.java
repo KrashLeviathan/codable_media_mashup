@@ -36,6 +36,10 @@ public class Comm {
         CodeGenerator generator = new CodeGenerator();
         walker.walk(generator, tree);
 
+        // FIXME: For debugging only
+        System.out.println("Exiting for debug");
+        System.exit(0);
+
         // Here is where we save and run the script or return errors
         if (generator.containsErrors()) {
             System.err.println(generator.getErrors());
